@@ -13,7 +13,7 @@ import attr
 from elasticsearch import Elasticsearch
 from elasticsearch_dsl import Index, connections
 from .models.database import ElasticsearchCollection, ElasticsearchItem, ElasticsearchAsset
-
+from types import ModuleType
 
 @attr.s
 class Session:
@@ -25,12 +25,11 @@ class Session:
 
 
     @classmethod
-    def create_from_settings(cls, settings: ElasticsearchSettings) -> "Session":
+    def create_from_settings(cls, settings: ModuleType) -> "Session":
 
         # Create the 'default' connection, available globally
         connections.create_connection(
-            hosts=settings.elasticsearch_hosts,
-            **settings.connection_kwargs
+            **settings.ELASTICSEARCH_CONNECTION
         )
 
         cls.set_indices_from_settings(settings)
@@ -42,9 +41,9 @@ class Session:
     @classmethod
     def set_indices_from_settings(cls, settings: ElasticsearchSettings) -> None:
 
-        collections = Index(settings.elasticsearch_collection_index)
-        items = Index(settings.elasticsearch_item_index)
-        assets = Index(settings.elasticsearch_asset_index)
+        collections = Index(settings.COLLECTION_INDEX)
+        items = Index(settings.ITEM_INDEX)
+        assets = Index(settings.ASSET_INDEX)
 
         collections.document(ElasticsearchCollection)
         items.document(ElasticsearchItem)

@@ -33,7 +33,8 @@ setup(
         'stac-fastapi.api',
         'stac-fastapi.types',
         'stac-fastapi.extensions',
-        'stac-pydantic'
+        'stac-pydantic',
+        'elasticsearch-dsl'
     ],
     entry_points={
     }

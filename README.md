@@ -1,0 +1,1 @@
+# Elasticsearch Backend for the stac-fastapi server

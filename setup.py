@@ -29,6 +29,7 @@ setup(
         ]
     },
     install_requires=[
+        'attrs',
         'fastapi',
         'stac-fastapi.api',
         'stac-fastapi.types',

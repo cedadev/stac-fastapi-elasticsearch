@@ -8,7 +8,6 @@ __copyright__ = 'Copyright 2018 United Kingdom Research and Innovation'
 __license__ = 'BSD - see LICENSE file in top-level package directory'
 __contact__ = 'richard.d.smith@stfc.ac.uk'
 
-from stac_fastapi.elasticsearch.config import ElasticsearchSettings
 import attr
 from elasticsearch import Elasticsearch
 from elasticsearch_dsl import Index, connections
@@ -39,7 +38,7 @@ class Session:
         )
 
     @classmethod
-    def set_indices_from_settings(cls, settings: ElasticsearchSettings) -> None:
+    def set_indices_from_settings(cls, settings: ModuleType) -> None:
 
         collections = Index(settings.COLLECTION_INDEX)
         items = Index(settings.ITEM_INDEX)

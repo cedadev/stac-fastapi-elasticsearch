@@ -13,10 +13,9 @@ from stac_fastapi.extensions.core import (
     FieldsExtension,
     SortExtension
 )
-from stac_fastapi.elasticsearch.config import ElasticsearchSettings
 from stac_fastapi.elasticsearch.session import Session
 from stac_fastapi.elasticsearch.core import CoreCrudClient
-from stac_fastapi.elasticsearch.settings import settings
+from stac_fastapi.elasticsearch.config import settings
 
 
 session = Session.create_from_settings(settings)

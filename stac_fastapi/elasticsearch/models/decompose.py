@@ -110,12 +110,12 @@ class CollectionGetter(GetterDict):
 
         db_model = Container(
             id=obj.meta.id,
-            stac_version=getattr(obj, 'stac_version', '1.0.0-beta.2'),
+            stac_version=getattr(obj, 'stac_version', '1.0.0'),
             stac_extensions=stac_extensions,
             title=getattr(obj, 'title', ''),
             description=getattr(obj, 'description', ''),
             keywords=get_keywords(obj, 'keywords'),
-            license=getattr(obj, 'license', ''),
+            license=getattr(obj, 'license', ' '),
             providers=getattr(obj, 'providers', None),
             summaries=get_summaries(obj, 'properties'),
             extent=translate_extent(obj, 'extent'),
@@ -133,7 +133,7 @@ class ItemGetter(GetterDict):
 
         db_model = Container(
             id = obj.meta.id,
-            stac_version=getattr(obj, 'stac_version', '1.0.0-beta.2'),
+            stac_version=getattr(obj, 'stac_version', '1.0.0'),
             stac_extensions=stac_extensions,
             geometry=None,
             bbox=obj.get_bbox(),

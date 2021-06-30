@@ -24,10 +24,13 @@ from stac_fastapi.types.search import STACSearch
 # Stac pydantic imports
 from stac_pydantic.api import ConformanceClasses
 from stac_pydantic import ItemCollection
+from stac_pydantic.links import Link
+from stac_pydantic.shared import MimeTypes
 
 # Third-party imports
 import attr
 from elasticsearch import NotFoundError
+from urllib.parse import urljoin
 
 # Typing imports
 from typing import Type, Dict, Any, Optional, List, Union
@@ -56,11 +59,9 @@ class CoreCrudClient(BaseCoreClient):
         Returns:
             Conformance classes which the server conforms to.
         """
+
         return ConformanceClasses(
-            conformsTo=[
-                "https://stacspec.org/STAC-api.html",
-                "http://docs.opengeospatial.org/is/17-069r3/17-069r3.html#ats_geojson",
-            ]
+            conformsTo=self.list_conformance_classes()
         )
 
     def post_search(self, search_request: STACSearch, **kwargs) -> Dict[str, Any]:
@@ -164,9 +165,22 @@ class CoreCrudClient(BaseCoreClient):
         collections = self.collection_table.search().execute()
         response = []
 
+        base_url = str(kwargs['request'].base_url)
+
         for collection in collections:
-            collection.base_url = str(kwargs['request'].base_url)
-            response.append(schemas.Collection.from_orm(collection))
+            collection.base_url = base_url
+
+            coll_response = schemas.Collection.from_orm(collection)
+
+            if self.extension_is_enabled('FilterExtension'):
+                coll_response.links.append(
+                    Link(
+                        rel="http://www.opengis.net/def/rel/ogc/1.0/queryables",
+                        type=MimeTypes.json,
+                        href=urljoin(base_url, f"collections/{coll_response.id}/queryables")
+                    )
+                )
+            response.append(coll_response)
 
         return response
 
@@ -185,9 +199,22 @@ class CoreCrudClient(BaseCoreClient):
             collection = self.collection_table.get(id=id)
         except NotFoundError:
             raise (NotFoundError(404, f'Collection: {id} not found'))
-        collection.base_url = str(kwargs['request'].base_url)
 
-        return schemas.Collection.from_orm(collection)
+        base_url = str(kwargs['request'].base_url)
+        collection.base_url = base_url
+
+        collection = schemas.Collection.from_orm(collection)
+
+        if self.extension_is_enabled('FilterExtension'):
+            collection.links.append(
+                Link(
+                    rel="http://www.opengis.net/def/rel/ogc/1.0/queryables",
+                    type=MimeTypes.json,
+                    href=urljoin(base_url, f"collections/{collection.id}/queryables")
+                )
+            )
+
+        return collection
 
     def item_collection(
             self, id: str, limit: int = 10, token: str = None, **kwargs

@@ -54,7 +54,7 @@ def translate_extent(obj: Document, key: str) -> Dict:
 
     return dict(
         temporal=dict(interval=[[lower.isoformat(), upper.isoformat()]]),
-        spatial=dict(bbox=[coordinates.wgs84_format()])
+        spatial=dict(bbox=[coordinates.to_wgs84()])
     )
 
 

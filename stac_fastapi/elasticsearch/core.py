@@ -16,6 +16,8 @@ import logging
 from stac_fastapi.elasticsearch.session import Session
 from stac_fastapi.elasticsearch.models import database
 from stac_fastapi.elasticsearch.models import schemas
+from stac_fastapi.elasticsearch.models.utils import Coordinates
+from stac_fastapi.elasticsearch.types import BaseSearch
 
 # Stac FastAPI imports
 from stac_fastapi.types.core import BaseCoreClient
@@ -31,10 +33,12 @@ from stac_pydantic.shared import MimeTypes
 import attr
 from elasticsearch import NotFoundError
 from urllib.parse import urljoin
+from fastapi import HTTPException
+from elasticsearch_dsl.query import Range
 
 # Typing imports
 from typing import Type, Dict, Any, Optional, List, Union
-
+from elasticsearch_dsl.search import Search
 
 logger = logging.getLogger(__name__)
 
@@ -77,6 +81,44 @@ class CoreCrudClient(BaseCoreClient):
         """
         pass
 
+    def get_queryset(self, **kwargs) -> Search:
+
+        base_search = BaseSearch(**kwargs)
+
+        qs = self.item_table.search()
+
+        if collections := base_search.collections:
+            qs = qs.filter('terms', collection_id__keyword=collections)
+
+        if items := base_search.ids:
+            qs = qs.filter('terms', item_id__keyword=items)
+
+        if bbox := base_search.bbox:
+            qs = qs.filter('geo_shape', spatial__bbox={
+                'shape': {
+                    'type': 'envelope',
+                    'coordinates': Coordinates.from_wgs84(bbox).to_geojson()
+                }
+            })
+
+        if base_search.datetime:
+            if base_search.start_date:
+                qs = qs.filter('range', properties__datetime={'gte': base_search.start_date})
+
+            if base_search.end_date:
+                qs = qs.filter('range', properties__datetime={'lte': base_search.end_date})
+
+        if limit := kwargs.get('limit'):
+            if limit > 10000:
+                raise(
+                    HTTPException(
+                        status_code=424,
+                        detail="The number of results requested is outside the maximum window 10,000")
+                      )
+            qs.extra(size=limit)
+
+        return qs
+
     def get_search(
             self,
             collections: Optional[List[str]] = None,
@@ -84,52 +126,38 @@ class CoreCrudClient(BaseCoreClient):
             bbox: Optional[List[NumType]] = None,
             datetime: Optional[Union[str, datetime]] = None,
             limit: Optional[int] = 10,
-            query: Optional[str] = None,
-            token: Optional[str] = None,
-            fields: Optional[List[str]] = None,
-            sortby: Optional[str] = None,
             **kwargs
-    ) -> Dict[str, Any]:
-        """Cross catalog search (GET).
+    ) -> ItemCollection:
+        """Cross catalog item search (GET).
 
         Called with `GET /search`.
 
         Returns:
             ItemCollection containing items which match the search criteria.
         """
-        base_args = {
-            "collections": collections,
-            "ids": ids,
-            "bbox": bbox,
-            "limit": limit,
-            "token": token,
-            "query": json.loads(query) if query else query,
-        }
-        if datetime:
-            base_args["datetime"] = datetime
-        if sortby:
-            # https://github.com/radiantearth/stac-spec/tree/master/api-spec/extensions/sort#http-get-or-post-form
-            sort_param = []
-            for sort in sortby:
-                sort_param.append(
-                    {
-                        "field": sort[1:],
-                        "direction": "asc" if sort[0] == "+" else "desc",
-                    }
-                )
-            base_args["sortby"] = sort_param
 
-        if fields:
-            includes = set()
-            excludes = set()
-            for field in fields:
-                if field[0] == "-":
-                    excludes.add(field[1:])
-                elif field[0] == "+":
-                    includes.add(field[1:])
-                else:
-                    includes.add(field)
-            base_args["fields"] = {"include": includes, "exclude": excludes}
+        items = self.get_queryset(
+            collections=collections,
+            ids=ids,
+            bbox=bbox,
+            datetime=datetime,
+            limit=limit,
+            **kwargs
+        )
+
+        response = []
+        base_url = str(kwargs['request'].base_url)
+
+        for item in items:
+            item.base_url = base_url
+            response_item = schemas.Item.from_orm(item)
+            response.append(response_item)
+
+        return ItemCollection(
+            type='FeatureCollection',
+            features=response,
+            links=[]
+        )
 
     def get_item(self, item_id: str, collection_id: str, **kwargs) -> schemas.Item:
         """Get item by id.
@@ -145,10 +173,20 @@ class CoreCrudClient(BaseCoreClient):
         try:
             item = self.item_table.get(id=item_id)
         except NotFoundError:
-            raise(NotFoundError(404, f'Item: {item_id} from collection: {collection_id} not found'))
+            raise (
+                HTTPException(
+                    status_code=404,
+                    detail=f'Item: {item_id} from collection: {collection_id} not found'
+                )
+            )
 
         if not getattr(item, 'collection_id', None) == collection_id:
-            raise(NotFoundError(404, f'Item: {item_id} from collection: {collection_id} not found'))
+            raise (
+                HTTPException(
+                    status_code=404,
+                    detail=f'Item: {item_id} from collection: {collection_id} not found'
+                )
+            )
 
         item.base_url = str(kwargs['request'].base_url)
         return schemas.Item.from_orm(item)
@@ -161,7 +199,7 @@ class CoreCrudClient(BaseCoreClient):
         Returns:
             A list of collections.
         """
-        #TODO: This only gets first 20, need pagination/scroll
+        # TODO: This only gets first 20, need pagination/scroll
         collections = self.collection_table.search().execute()
         response = []
 
@@ -231,8 +269,8 @@ class CoreCrudClient(BaseCoreClient):
         Returns:
             An ItemCollection.
         """
-        #TODO: This only gets first 20, need pagination/scroll
-        items = self.item_table.search().filter('term', collection_id=id).execute()
+        # TODO: This only gets first 20, need pagination/scroll
+        items = self.item_table.search().filter('term', collection_id__keyword=id).execute()
 
         response = []
 
@@ -245,4 +283,3 @@ class CoreCrudClient(BaseCoreClient):
             features=response,
             links=[]
         )
-

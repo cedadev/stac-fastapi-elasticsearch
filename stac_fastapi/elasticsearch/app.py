@@ -20,8 +20,8 @@ from stac_fastapi.elasticsearch.filters import FiltersClient
 from stac_fastapi.elasticsearch.config import settings
 
 extensions = [
-        FieldsExtension(),
-        SortExtension(),
+        # FieldsExtension(),
+        # SortExtension(),
         FilterExtension(client=FiltersClient())
     ]
 

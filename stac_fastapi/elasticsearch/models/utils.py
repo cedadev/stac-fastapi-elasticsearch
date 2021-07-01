@@ -29,10 +29,10 @@ class Coordinates:
     def from_geojson(cls, coordinates: List[List[NumType]]) -> 'Coordinates':
         """
         GeoJSON formatted coordinates are in the form:
-        NW[lon, lat], SE[lon, lat]
+
+        [[minLon, maxLat],[maxLon, minLat]]
 
         :param coordinates: GeoJSON formatted coordinates from elasticsearch
-        :return:
         """
 
         minlon = coordinates[0][0]
@@ -42,13 +42,40 @@ class Coordinates:
 
         return cls(minlon, maxlon, minlat, maxlat)
 
-    def wgs84_format(self) -> List[NumType]:
+    @classmethod
+    def from_wgs84(cls, coordinates: List) -> 'Coordinates':
+        """
+        WGS84 formatted coordinates are in the form:
+
+        [minLon, minLat, maxLon, maxLat]
+
+        :param coordinates: WGS84 formatted coordinates
+        """
+
+        minlon = coordinates[0]
+        maxlon = coordinates[2]
+        minlat = coordinates[1]
+        maxlat = coordinates[3]
+
+        return cls(minlon, maxlon, minlat, maxlat)
+
+    def to_wgs84(self) -> List[NumType]:
         """
         Exports the coordinates in WGS84 format
-        :return:
+
+        [minLon, minLat, maxLon, maxLat]
         """
 
         return [self.minlon, self.minlat, self.maxlon, self.maxlat]
+
+    def to_geojson(self) -> List[List[NumType]]:
+        """
+        Exports the coordinates in GeoJSON format
+
+        [[minLon, maxLat],[maxLon, minLat]]
+        """
+
+        return [[self.minlon, self.maxlat],[self.maxlon, self.minlat]]
 
 
 def rgetattr(obj, attr, *args):

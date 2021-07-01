@@ -9,7 +9,7 @@ __license__ = 'BSD - see LICENSE file in top-level package directory'
 __contact__ = 'richard.d.smith@stfc.ac.uk'
 
 from pydantic.utils import GetterDict
-from stac_fastapi.types.links import CollectionLinks
+from stac_fastapi.types.links import CollectionLinks, ItemLinks
 from elasticsearch_dsl import Document
 from .utils import Coordinates
 
@@ -131,6 +131,12 @@ class ItemGetter(GetterDict):
 
         stac_extensions = getattr(obj, 'stac_extensions', [])
 
+        item_links = ItemLinks(
+            base_url=obj.base_url,
+            collection_id=obj.get_collection_id(),
+            item_id=obj.meta.id
+        ).create_links()
+
         db_model = Container(
             id = obj.meta.id,
             stac_version=getattr(obj, 'stac_version', '1.0.0'),
@@ -138,9 +144,9 @@ class ItemGetter(GetterDict):
             geometry=None,
             bbox=obj.get_bbox(),
             properties=obj.get_properties(),
-            links=[],
+            links=item_links,
             assets=obj.get_stac_assets(),
-            collection=None
+            collection=obj.get_collection_id()
         )
 
         super().__init__(db_model)

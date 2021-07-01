@@ -85,7 +85,16 @@ class ElasticsearchItem(Document):
         except AttributeError:
             return
 
-        return Coordinates.from_geojson(coordinates).wgs84_format()
+        return Coordinates.from_geojson(coordinates).to_wgs84()
+
+    def get_collection_id(self) -> str:
+        """
+        Return the collection id
+        """
+        try:
+            return getattr(self, 'collection_id')
+        except AttributeError:
+            return
 
 
 class ElasticsearchAsset(Document):

@@ -12,7 +12,7 @@ stac-pydantic==1.3.9
 starlette==0.14.2
 typing-extensions==3.10.0.0
 urllib3==1.26.5
-git+https://github.com/rsmith013/stac-fastapi@9dfef561ccac67e42e27f74fb42e7afcd0fc534c#egg=stac_fastapi.api&subdirectory=stac_fastapi/api
-git+https://github.com/rsmith013/stac-fastapi@9dfef561ccac67e42e27f74fb42e7afcd0fc534c#egg=stac_fastapi.extensions&subdirectory=stac_fastapi/extensions
-git+https://github.com/rsmith013/stac-fastapi@9dfef561ccac67e42e27f74fb42e7afcd0fc534c#egg=stac_fastapi.types&subdirectory=stac_fastapi/types
+git+https://github.com/rsmith013/stac-fastapi@77b30996126b30c15a73fccba7ccf618331ffd98#egg=stac_fastapi.api&subdirectory=stac_fastapi/api
+git+https://github.com/rsmith013/stac-fastapi@77b30996126b30c15a73fccba7ccf618331ffd98#egg=stac_fastapi.extensions&subdirectory=stac_fastapi/extensions
+git+https://github.com/rsmith013/stac-fastapi@77b30996126b30c15a73fccba7ccf618331ffd98#egg=stac_fastapi.types&subdirectory=stac_fastapi/types
 git+https://github.com/rsmith013/stac-pydantic

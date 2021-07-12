@@ -79,7 +79,23 @@ class CoreCrudClient(BaseCoreClient):
         Returns:
             ItemCollection containing items which match the search criteria.
         """
-        pass
+
+        items = self.get_queryset(**search_request.dict())
+
+        response = []
+        base_url = str(kwargs['request'].base_url)
+
+        for item in items:
+            item.base_url = base_url
+            response_item = schemas.Item.from_orm(item)
+            response.append(response_item)
+
+        return ItemCollection(
+            type='FeatureCollection',
+            features=response,
+            links=[]
+        )
+
 
     def get_queryset(self, **kwargs) -> Search:
 
@@ -136,14 +152,16 @@ class CoreCrudClient(BaseCoreClient):
             ItemCollection containing items which match the search criteria.
         """
 
-        items = self.get_queryset(
-            collections=collections,
-            ids=ids,
-            bbox=bbox,
-            datetime=datetime,
-            limit=limit,
+        search = {
+            'collections': collections,
+            'ids': ids,
+            'bbox': bbox,
+            'datetime': datetime,
+            'limit': limit,
             **kwargs
-        )
+        }
+
+        items = self.get_queryset(**search)
 
         response = []
         base_url = str(kwargs['request'].base_url)

@@ -18,6 +18,7 @@ from stac_fastapi.elasticsearch.session import Session
 from stac_fastapi.elasticsearch.core import CoreCrudClient
 from stac_fastapi.elasticsearch.filters import FiltersClient
 from stac_fastapi.elasticsearch.config import settings
+from stac_fastapi.elasticsearch.types import BaseSearch
 
 extensions = [
         # FieldsExtension(),
@@ -29,7 +30,8 @@ session = Session.create_from_settings(settings)
 api = StacApi(
     settings = settings,
     extensions=extensions,
-    client=CoreCrudClient(session=session, extensions=extensions)
+    client=CoreCrudClient(session=session, extensions=extensions),
+    search_request_model=BaseSearch
 )
 
 app = api.app

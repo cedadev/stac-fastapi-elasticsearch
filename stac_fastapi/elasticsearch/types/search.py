@@ -20,10 +20,11 @@ from geojson_pydantic.geometries import (
     Polygon,
     _GeometryBase,
 )
-from pydantic import BaseModel, validator
+from pydantic import BaseModel, validator, Extra
 from pydantic.datetime_parse import parse_datetime
 
 from stac_pydantic.shared import BBox
+
 
 class BaseSearch(BaseModel):
     """
@@ -38,6 +39,9 @@ class BaseSearch(BaseModel):
     ]
     datetime: Optional[str]
     limit: int = 10
+
+    class Config:
+        extra = Extra.allow
 
     @property
     def start_date(self) -> Optional[datetime]:

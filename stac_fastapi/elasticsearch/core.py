@@ -11,6 +11,7 @@ __contact__ = 'richard.d.smith@stfc.ac.uk'
 # Python imports
 from datetime import datetime
 import logging
+from string import Template
 
 # Package imports
 from stac_fastapi.elasticsearch.session import Session
@@ -29,12 +30,15 @@ from stac_pydantic import ItemCollection
 from stac_pydantic.links import Link
 from stac_pydantic.shared import MimeTypes
 
+# CQL Filters imports
+from pygeofilter.parsers.cql_json import parse as parse_json
+from pygeofilter_elasticsearch import to_filter
+
 # Third-party imports
 import attr
 from elasticsearch import NotFoundError
 from urllib.parse import urljoin
 from fastapi import HTTPException
-from elasticsearch_dsl.query import Range
 
 # Typing imports
 from typing import Type, Dict, Any, Optional, List, Union
@@ -132,6 +136,19 @@ class CoreCrudClient(BaseCoreClient):
                         detail="The number of results requested is outside the maximum window 10,000")
                       )
             qs.extra(size=limit)
+
+        if self.extension_is_enabled('FilterExtension'):
+
+            field_mapping = {
+                'datetime': 'properties.datetime',
+                'bbox': 'spatial.bbox.coordinates'
+            }
+
+            if filter := getattr(base_search, 'filter', None):
+                ast = parse_json(filter)
+                filter = to_filter(ast, field_mapping, field_default=Template('properties__${name}__keyword'))
+
+                qs = qs.query(filter)
 
         return qs
 

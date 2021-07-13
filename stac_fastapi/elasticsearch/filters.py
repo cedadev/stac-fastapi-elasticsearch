@@ -13,7 +13,6 @@ from stac_fastapi.elasticsearch.models.database import ElasticsearchCollection
 from stac_fastapi.types.core import BaseFiltersClient
 
 import attr
-from elasticsearch_dsl import Index
 from elasticsearch import NotFoundError
 
 from typing import Dict, Any, Optional
@@ -74,4 +73,5 @@ class FiltersClient(BaseFiltersClient):
             # What to do for the root level queryables? Perhaps this is semi-static and built
             # from the top level in the vocabulary tree from the vocab service? For now, return
             # blank schema.
+            ...
         return schema

@@ -10,15 +10,8 @@ __contact__ = 'richard.d.smith@stfc.ac.uk'
 
 from pydantic.utils import GetterDict
 from stac_fastapi.types.links import CollectionLinks, ItemLinks
-from elasticsearch_dsl import Document
-from .utils import Coordinates
 
-from typing import Any, Optional, Dict, List
-
-DEFAULT_EXTENT = {
-    'temporal': [[None, None]],
-    'spatial': [[-180, -90, 180, 90]]
-}
+from typing import Any
 
 
 class Container:
@@ -31,60 +24,6 @@ class Container:
     def __init__(self, **kwargs):
         for k, v in kwargs.items():
             setattr(self, k, v)
-
-
-def translate_extent(obj: Document, key: str) -> Dict:
-    """
-    Takes the elastic-dsl Document and extracts the
-    extent information from it.
-
-    :param obj: object to get extent from
-    :param key: key to access extent
-    """
-    try:
-        extent = getattr(obj, key)
-    except AttributeError:
-        return DEFAULT_EXTENT
-
-    # Throw away inclusivity flag with _
-    lower, _ = extent.temporal.lower
-    upper, _ = extent.temporal.upper
-
-    coordinates = Coordinates.from_geojson(extent.spatial.coordinates)
-
-    return dict(
-        temporal=dict(interval=[[lower.isoformat(), upper.isoformat()]]),
-        spatial=dict(bbox=[coordinates.to_wgs84()])
-    )
-
-
-def get_summaries(obj: Document, key: str) -> Optional[Dict]:
-    """
-    Turns the elastic-dsl AttrDict into a dict or None
-
-    :param obj:
-    :param key:
-    :return:
-    """
-    try:
-        summaries = getattr(obj, key)
-    except AttributeError:
-        return
-
-    return summaries.to_dict()
-
-
-def get_keywords(obj: Any, key: str) -> Optional[List]:
-    try:
-        keywords = getattr(obj, key)
-    except AttributeError:
-        return
-
-    return list(keywords)
-
-
-def get_assets(obj: Any, key:str):
-    return
 
 
 class CollectionGetter(GetterDict):
@@ -114,11 +53,11 @@ class CollectionGetter(GetterDict):
             stac_extensions=stac_extensions,
             title=getattr(obj, 'title', ''),
             description=getattr(obj, 'description', ''),
-            keywords=get_keywords(obj, 'keywords'),
+            keywords=obj.get_keywords('keywords'),
             license=getattr(obj, 'license', ' '),
             providers=getattr(obj, 'providers', None),
-            summaries=get_summaries(obj, 'properties'),
-            extent=translate_extent(obj, 'extent'),
+            summaries=obj.get_summaries('properties'),
+            extent=obj.get_extent('extent'),
             links=collection_links
         )
 

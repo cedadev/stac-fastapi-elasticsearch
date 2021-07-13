@@ -15,6 +15,13 @@ from .utils import Coordinates, rgetattr
 from typing import Optional, List, Dict
 
 
+DEFAULT_EXTENT = {
+    'temporal': [[None, None]],
+    'spatial': [[-180, -90, 180, 90]]
+}
+
+
+
 class Extent(InnerDoc):
 
     temporal = DateRange()
@@ -35,11 +42,51 @@ class ElasticsearchCollection(Document):
 
         return s
 
-    def decompose(self):
+    def get_summaries(self, key: str) -> Optional[Dict]:
+        """
+        Turns the elastic-dsl AttrDict into a dict or None
 
+        :param key:
+        :return:
+        """
+        try:
+            summaries = getattr(self, key)
+        except AttributeError:
+            return
 
+        return summaries.to_dict()
 
-        return self.to_dict()
+    def get_extent(self, key: str) -> Dict:
+        """
+        Takes the elastic-dsl Document and extracts the
+        extent information from it.
+
+        :param obj: object to get extent from
+        :param key: key to access extent
+        """
+        try:
+            extent = getattr(self, key)
+        except AttributeError:
+            return DEFAULT_EXTENT
+
+        # Throw away inclusivity flag with _
+        lower, _ = extent.temporal.lower
+        upper, _ = extent.temporal.upper
+
+        coordinates = Coordinates.from_geojson(extent.spatial.coordinates)
+
+        return dict(
+            temporal=dict(interval=[[lower.isoformat(), upper.isoformat()]]),
+            spatial=dict(bbox=[coordinates.to_wgs84()])
+        )
+
+    def get_keywords(self, key: str) -> Optional[List]:
+        try:
+            keywords = getattr(self, key)
+        except AttributeError:
+            return
+
+        return list(keywords)
 
 
 class ElasticsearchItem(Document):

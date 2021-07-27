@@ -102,6 +102,7 @@ class ElasticsearchItem(Document):
     def search_assets(self):
         s = ElasticsearchAsset.search()
         s = s.filter('term', collection_id__keyword=self.meta.id)
+        s = s.exclude('term', categories__keyword='hidden')
         return s
 
     @property

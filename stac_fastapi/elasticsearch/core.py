@@ -39,6 +39,7 @@ import attr
 from elasticsearch import NotFoundError
 from urllib.parse import urljoin
 from fastapi import HTTPException
+from pydantic.error_wrappers import ValidationError
 
 # Typing imports
 from typing import Type, Dict, Any, Optional, List, Union
@@ -185,7 +186,13 @@ class CoreCrudClient(BaseCoreClient):
 
         for item in items:
             item.base_url = base_url
-            response_item = schemas.Item.from_orm(item)
+            try:
+                response_item = schemas.Item.from_orm(item)
+            except ValidationError:
+                # Don't append if it does not validate as a stac
+                # item.
+                logger.warning(f'Ignoring {item.item_id}')
+                continue
             response.append(response_item)
 
         return ItemCollection(
@@ -224,7 +231,18 @@ class CoreCrudClient(BaseCoreClient):
             )
 
         item.base_url = str(kwargs['request'].base_url)
-        return schemas.Item.from_orm(item)
+
+        try:
+            from_orm = schemas.Item.from_orm(item)
+        except ValidationError:
+            raise(
+                HTTPException(
+                    status_code=404,
+                    detail=f'Item: {item_id} from collection: {collection_id} does not'
+                           f' validate and has been excluded.'
+                )
+            )
+        return from_orm
 
     def all_collections(self, **kwargs) -> List[schemas.Collection]:
         """Get all available collections.
@@ -305,13 +323,22 @@ class CoreCrudClient(BaseCoreClient):
             An ItemCollection.
         """
         # TODO: This only gets first 20, need pagination/scroll
-        items = self.item_table.search().filter('term', collection_id__keyword=id).execute()
+        items = self.item_table.search().filter('term', collection_id__keyword=id)
+
+        # TODO: support filter parameter https://portal.ogc.org/files/96288#filter-param
 
         response = []
 
         for item in items:
             item.base_url = str(kwargs['request'].base_url)
-            response.append(schemas.Item.from_orm(item))
+            try:
+                from_orm = schemas.Item.from_orm(item)
+            except ValidationError:
+                # Do not append if it does not validate as a STAC
+                # item
+                logger.warning(f'Ignoring {item.item_id}')
+                continue
+            response.append(from_orm)
 
         return ItemCollection(
             type='FeatureCollection',

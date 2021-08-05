@@ -253,7 +253,7 @@ class CoreCrudClient(BaseCoreClient):
             A list of collections.
         """
         # TODO: This only gets first 20, need pagination/scroll
-        collections = self.collection_table.search().execute()
+        collections = self.collection_table.search()
         response = []
 
         base_url = str(kwargs['request'].base_url)

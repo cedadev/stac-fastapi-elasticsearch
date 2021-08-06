@@ -139,7 +139,7 @@ class CoreCrudClient(BaseCoreClient):
             qs.extra(size=limit)
 
         if page := kwargs.get('page'):
-            qs = qs[(page-1)*limit:(page*limit)-1]
+            qs = qs[(page-1)*limit:page*limit]
 
         if self.extension_is_enabled('FilterExtension'):
 
@@ -282,7 +282,7 @@ class CoreCrudClient(BaseCoreClient):
         page = int(query_params.pop('page', '1'))
         limit = int(query_params.get('limit', '10'))
 
-        collections = self.collection_table.search()[(page-1)*limit:(page*limit)-1]
+        collections = self.collection_table.search()[(page-1)*limit:page*limit]
         response = []
 
         base_url = str(kwargs['request'].base_url)
@@ -375,7 +375,7 @@ class CoreCrudClient(BaseCoreClient):
         page = int(query_params.pop('page', '1'))
         limit = int(query_params.get('limit', '10'))
         
-        items = self.item_table.search().filter('term', collection_id__keyword=id)[(page-1)*limit:(page*limit)-1]
+        items = self.item_table.search().filter('term', collection_id__keyword=id)[(page-1)*limit:page*limit]
 
         # TODO: support filter parameter https://portal.ogc.org/files/96288#filter-param
 

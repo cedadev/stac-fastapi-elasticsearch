@@ -138,6 +138,9 @@ class CoreCrudClient(BaseCoreClient):
                       )
             qs.extra(size=limit)
 
+        if page := kwargs.get('page'):
+            qs = qs[(page-1)*limit:(page*limit)-1]
+
         if self.extension_is_enabled('FilterExtension'):
 
             field_mapping = {
@@ -169,13 +172,15 @@ class CoreCrudClient(BaseCoreClient):
         Returns:
             ItemCollection containing items which match the search criteria.
         """
-
+        query_params = dict(kwargs['request'].query_params)
+        page = int(query_params.pop('page', '1'))
         search = {
             'collections': collections,
             'ids': ids,
             'bbox': bbox,
             'datetime': datetime,
             'limit': limit,
+            'page': page,
             **kwargs
         }
 
@@ -195,10 +200,31 @@ class CoreCrudClient(BaseCoreClient):
                 continue
             response.append(response_item)
 
+        link_url = urljoin(base_url, "search") + "?"
+        for key, value in query_params.items():
+            link_url += f"{key}={value}&"
+        links = [
+            Link(
+                rel="next",
+                href=f"{link_url}page={page+1}"
+            ),
+            Link(
+                rel="self",
+                href=f"{link_url}page={page}"
+            )
+        ]
+        if page != 1:
+            links.append(
+                Link(
+                    rel="previous",
+                    href=f"{link_url}page={page-1}"
+                )
+            )
+
         return ItemCollection(
             type='FeatureCollection',
             features=response,
-            links=[]
+            links=links
         )
 
     def get_item(self, item_id: str, collection_id: str, **kwargs) -> schemas.Item:
@@ -252,11 +278,18 @@ class CoreCrudClient(BaseCoreClient):
         Returns:
             A list of collections.
         """
-        # TODO: This only gets first 20, need pagination/scroll
-        collections = self.collection_table.search()
+        query_params = dict(kwargs['request'].query_params)
+        page = int(query_params.pop('page', '1'))
+        limit = int(query_params.get('limit', '10'))
+
+        collections = self.collection_table.search()[(page-1)*limit:(page*limit)-1]
         response = []
 
         base_url = str(kwargs['request'].base_url)
+
+        link_url = urljoin(base_url, "search") + "?"
+        for key, value in query_params.items():
+            link_url += f"{key}={value}&"
 
         for collection in collections:
             collection.base_url = base_url
@@ -264,13 +297,28 @@ class CoreCrudClient(BaseCoreClient):
             coll_response = schemas.Collection.from_orm(collection)
 
             if self.extension_is_enabled('FilterExtension'):
-                coll_response.links.append(
+                coll_response.links += [
                     Link(
                         rel="http://www.opengis.net/def/rel/ogc/1.0/queryables",
                         type=MimeTypes.json,
                         href=urljoin(base_url, f"collections/{coll_response.id}/queryables")
+                    ),
+                    Link(
+                        rel="next",
+                        href=f"{link_url}page={page+1}"
+                    ),
+                    Link(
+                        rel="self",
+                        href=f"{link_url}page={page}"
                     )
-                )
+                ]
+                if page != 1:
+                    coll_response.links.append(
+                        Link(
+                            rel="previous",
+                            href=f"{link_url}page={page-1}"
+                        )
+                    )
             response.append(coll_response)
 
         return response
@@ -308,7 +356,7 @@ class CoreCrudClient(BaseCoreClient):
         return collection
 
     def item_collection(
-            self, id: str, limit: int = 10, token: str = None, **kwargs
+            self, id: str, limit: int = 10, page: int = 0, **kwargs
     ) -> ItemCollection:
         """Get all items from a specific collection.
 
@@ -317,20 +365,48 @@ class CoreCrudClient(BaseCoreClient):
         Args:
             id: id of the collection.
             limit: number of items to return.
-            token: pagination token.
+            page: page number.
 
         Returns:
             An ItemCollection.
         """
         # TODO: This only gets first 20, need pagination/scroll
-        items = self.item_table.search().filter('term', collection_id__keyword=id)
+        query_params = dict(kwargs['request'].query_params)
+        page = int(query_params.pop('page', '1'))
+        limit = int(query_params.get('limit', '10'))
+        
+        items = self.item_table.search().filter('term', collection_id__keyword=id)[(page-1)*limit:(page*limit)-1]
 
         # TODO: support filter parameter https://portal.ogc.org/files/96288#filter-param
 
         response = []
 
+        base_url = str(kwargs['request'].base_url)
+
+        link_url = urljoin(base_url, "search") + "?"
+        for key, value in query_params.items():
+            link_url += f"{key}={value}&"
+
+        links = [
+            Link(
+                rel="next",
+                href=f"{link_url}page={page+1}"
+            ),
+            Link(
+                rel="self",
+                href=f"{link_url}page={page}"
+            )
+        ]
+        if page != 1:
+            links.append(
+                Link(
+                    rel="previous",
+                    href=f"{link_url}page={page-1}"
+                )
+            )
+
         for item in items:
-            item.base_url = str(kwargs['request'].base_url)
+            item.base_url = base_url
             try:
                 from_orm = schemas.Item.from_orm(item)
             except ValidationError:
@@ -343,5 +419,5 @@ class CoreCrudClient(BaseCoreClient):
         return ItemCollection(
             type='FeatureCollection',
             features=response,
-            links=[]
+            links=links
         )

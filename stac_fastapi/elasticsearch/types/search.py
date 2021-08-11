@@ -20,7 +20,7 @@ from geojson_pydantic.geometries import (
     Polygon,
     _GeometryBase,
 )
-from pydantic import BaseModel, validator, Extra
+from pydantic import BaseModel, validator, Extra, Field
 from pydantic.datetime_parse import parse_datetime
 
 from stac_pydantic.shared import BBox

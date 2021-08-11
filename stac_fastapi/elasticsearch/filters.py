@@ -22,20 +22,20 @@ from typing import Dict, Any, Optional
 class FiltersClient(BaseFiltersClient):
 
     def get_queryables(
-            self, id: Optional[str] = None, **kwargs
+            self, collectionId: Optional[str] = None, **kwargs
     ) -> Dict[str, Any]:
 
         schema = super().get_queryables()
 
         if id:
             try:
-                collection = ElasticsearchCollection.get(id=id)
+                collection = ElasticsearchCollection.get(id=collectionId)
             except NotFoundError:
-                raise (NotFoundError(404, f'Collection: {id} not found'))
+                raise (NotFoundError(404, f'Collection: {collectionId} not found'))
 
-            schema['$id'] = f'{kwargs["request"].base_url}/{id}/queryables'
-            schema['title'] = f'Queryables for {id}'
-            schema['description'] = f'Queryable names and values for the {id} collection'
+            schema['$id'] = f'{kwargs["request"].base_url}/{collectionId}/queryables'
+            schema['title'] = f'Queryables for {collectionId}'
+            schema['description'] = f'Queryable names and values for the {collectionId} collection'
 
             if summaries := collection.get_summaries('properties'):
                 for k, v in summaries.items():

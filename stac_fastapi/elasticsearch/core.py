@@ -41,6 +41,7 @@ from fastapi import HTTPException
 # Typing imports
 from typing import Type, Dict, Any, Optional, List, Union
 from elasticsearch_dsl.search import Search
+from elasticsearch_dsl.query import QueryString
 
 logger = logging.getLogger(__name__)
 
@@ -124,14 +125,14 @@ class CoreCrudClient(BaseCoreClient):
             if base_search.end_date:
                 qs = qs.filter('range', properties__datetime={'lte': base_search.end_date})
 
-        if limit := kwargs.get('limit'):
-            if limit > 10000:
+        if base_search.limit:
+            if base_search.limit > 10000:
                 raise(
                     HTTPException(
                         status_code=424,
                         detail="The number of results requested is outside the maximum window 10,000")
                       )
-            qs.extra(size=limit)
+            qs.extra(size=base_search.limit)
 
         if self.extension_is_enabled('FilterExtension'):
 
@@ -147,7 +148,13 @@ class CoreCrudClient(BaseCoreClient):
                 qs = qs.query(filter)
 
         if self.extension_is_enabled('FreeTextExtension'):
-            ...
+            if base_search.q:
+                qs = qs.query(
+                    QueryString(
+                        query=base_search.q,
+                        default_field='properties.*'
+                    )
+                )
 
         return qs
 

@@ -18,7 +18,7 @@ from stac_fastapi.elasticsearch.session import Session
 from stac_fastapi.elasticsearch.models import database
 from stac_fastapi.elasticsearch.models import serializers
 from stac_fastapi.elasticsearch.models.utils import Coordinates
-from stac_fastapi.elasticsearch.types import BaseSearch
+from stac_fastapi.elasticsearch.pagination import generate_pagination_links
 
 # Stac FastAPI imports
 from stac_fastapi.types.core import BaseCoreClient
@@ -27,6 +27,7 @@ from stac_fastapi.types import stac as stac_types
 
 # Stac pydantic imports
 from stac_pydantic.shared import MimeTypes
+from stac_pydantic.links import Relations
 
 # CQL Filters imports
 from pygeofilter.parsers.cql_json import parse as parse_json
@@ -71,7 +72,7 @@ class CoreCrudClient(BaseCoreClient):
             conformsTo=self.list_conformance_classes()
         )
 
-    def post_search(self, search_request: BaseSearchPostRequest, **kwargs) -> Dict[str, Any]:
+    def post_search(self, search_request: Type[BaseSearchPostRequest], **kwargs) -> Dict[str, Any]:
         """Cross catalog search (POST).
 
         Called with `POST /search`.
@@ -100,17 +101,17 @@ class CoreCrudClient(BaseCoreClient):
 
     def get_queryset(self, **kwargs) -> Search:
 
-        base_search = BaseSearch(**kwargs)
+        # base_search = BaseSearch(**kwargs)
 
         qs = self.item_table.search()
 
-        if collections := base_search.collections:
+        if collections := kwargs.get('collections'):
             qs = qs.filter('terms', collection_id__keyword=collections)
 
-        if items := base_search.ids:
+        if items := kwargs.get('ids'):
             qs = qs.filter('terms', item_id__keyword=items)
 
-        if bbox := base_search.bbox:
+        if bbox := kwargs.get('bbox'):
             qs = qs.filter('geo_shape', spatial__bbox={
                 'shape': {
                     'type': 'envelope',
@@ -118,21 +119,24 @@ class CoreCrudClient(BaseCoreClient):
                 }
             })
 
-        if base_search.datetime:
-            if base_search.start_date:
-                qs = qs.filter('range', properties__datetime={'gte': base_search.start_date})
+        if kwargs.get('datetime'):
+            if start_date := kwargs.get('start_date'):
+                qs = qs.filter('range', properties__datetime={'gte': start_date})
 
-            if base_search.end_date:
-                qs = qs.filter('range', properties__datetime={'lte': base_search.end_date})
+            if end_date := kwargs.get('end_date'):
+                qs = qs.filter('range', properties__datetime={'lte': end_date})
 
-        if base_search.limit:
-            if base_search.limit > 10000:
+        if limit := kwargs.get('limit'):
+            if limit > 10000:
                 raise(
                     HTTPException(
                         status_code=424,
                         detail="The number of results requested is outside the maximum window 10,000")
                       )
-            qs.extra(size=base_search.limit)
+            qs.extra(size=limit)
+
+        if page := kwargs.get('page'):
+            qs = qs[(page-1)*limit:page*limit]
 
         if self.extension_is_enabled('FilterExtension'):
 
@@ -141,17 +145,20 @@ class CoreCrudClient(BaseCoreClient):
                 'bbox': 'spatial.bbox.coordinates'
             }
 
-            if filter := getattr(base_search, 'filter', None):
-                ast = parse_json(filter)
-                filter = to_filter(ast, field_mapping, field_default=Template('properties__${name}__keyword'))
-
-                qs = qs.query(filter)
+            if qfilter := kwargs.get('filter'):
+                ast = parse_json(qfilter)
+                qfilter = to_filter(
+                    ast,
+                    field_mapping,
+                    field_default=Template('properties__${name}__keyword')
+                )
+                qs = qs.query(qfilter)
 
         if self.extension_is_enabled('FreeTextExtension'):
-            if base_search.q:
+            if q := kwargs.get('q'):
                 qs = qs.query(
                     QueryString(
-                        query=base_search.q,
+                        query=q,
                         default_field='properties.*'
                     )
                 )
@@ -174,13 +181,15 @@ class CoreCrudClient(BaseCoreClient):
         Returns:
             ItemCollection containing items which match the search criteria.
         """
-
+        query_params = dict(kwargs['request'].query_params)
+        page = int(query_params.get('page', '1'))
         search = {
             'collections': collections,
             'ids': ids,
             'bbox': bbox,
             'datetime': datetime,
             'limit': limit,
+            'page': page,
             **kwargs
         }
 
@@ -194,11 +203,13 @@ class CoreCrudClient(BaseCoreClient):
             response_item = serializers.ItemSerializer.db_to_stac(item, base_url)
             response.append(response_item)
 
-        return {
-            'type': 'FeatureCollection',
-            'features': response,
-            'links': []
-        }
+        links = generate_pagination_links(kwargs['request'])
+
+        return stac_types.ItemCollection(
+            type='FeatureCollection',
+            features=response,
+            links=links
+        )
 
     def get_item(self, itemId: str, collectionId: str, **kwargs) -> stac_types.Item:
         """Get item by id.
@@ -233,7 +244,7 @@ class CoreCrudClient(BaseCoreClient):
 
         return serializers.ItemSerializer.db_to_stac(item, base_url)
 
-    def all_collections(self, **kwargs) -> List[stac_types.Collection]:
+    def all_collections(self, **kwargs) -> Dict:
         """Get all available collections.
 
         Called with `GET /collections`.
@@ -241,8 +252,11 @@ class CoreCrudClient(BaseCoreClient):
         Returns:
             A list of collections.
         """
-        # TODO: This only gets first 20, need pagination/scroll
-        collections = self.collection_table.search()
+        query_params = dict(kwargs['request'].query_params)
+        page = int(query_params.get('page', '1'))
+        limit = int(query_params.get('limit', '10'))
+
+        collections = self.collection_table.search()[(page-1)*limit:page*limit]
         response = []
 
         base_url = str(kwargs['request'].base_url)
@@ -255,16 +269,34 @@ class CoreCrudClient(BaseCoreClient):
             )
 
             if self.extension_is_enabled('FilterExtension'):
-                coll_response['links'].append(
+                coll_response['links'].extend([
                     {
-                        "rel": "http://www.opengis.net/def/rel/ogc/1.0/queryables",
-                        "type": MimeTypes.json,
-                        "href": urljoin(base_url, f"collections/{coll_response.get('id')}/queryables")
+                        'rel': 'http://www.opengis.net/def/rel/ogc/1.0/queryables',
+                        'type': MimeTypes.json,
+                        'href': urljoin(base_url, f"collections/{coll_response.get('id')}/queryables")
                     }
-                )
+                ])
+
+
             response.append(coll_response)
 
-        return response
+        links = [
+            {
+                'rel': Relations.root,
+                'type': MimeTypes.json,
+                'href': base_url
+            },
+            {
+                'rel': Relations.self,
+                'type': MimeTypes.json,
+                'href': urljoin(base_url, 'collections')
+            }
+        ]
+
+        return {
+            'collections':response,
+            'links': links
+        }
 
     def get_collection(self, collectionId: str, **kwargs) -> stac_types.Collection:
         """Get collection by id.
@@ -299,7 +331,7 @@ class CoreCrudClient(BaseCoreClient):
         return collection
 
     def item_collection(
-            self, collectionId: str, limit: int = 10, token: str = None, **kwargs
+            self, collectionId: str, limit: int = 10,  **kwargs
     ) -> stac_types.ItemCollection:
         """Get all items from a specific collection.
 
@@ -308,19 +340,23 @@ class CoreCrudClient(BaseCoreClient):
         Args:
             id: id of the collection.
             limit: number of items to return.
-            token: pagination token.
+            page: page number.
 
         Returns:
             An ItemCollection.
         """
-        # TODO: This only gets first 20, need pagination/scroll
-        items = self.item_table.search().filter('term', collection_id__keyword=collectionId)
+        query_params = dict(kwargs['request'].query_params)
+        page = int(query_params.get('page', '1'))
+        limit = int(query_params.get('limit', '10'))
+
+        items = self.item_table.search().filter('term', collection_id__keyword=collectionId)[(page-1)*limit:page*limit]
 
         # TODO: support filter parameter https://portal.ogc.org/files/96288#filter-param
 
         response = []
 
         base_url = str(kwargs['request'].base_url)
+
         for item in items:
             response.append(
                 serializers.ItemSerializer.db_to_stac(
@@ -331,5 +367,6 @@ class CoreCrudClient(BaseCoreClient):
         return {
             'type': 'FeatureCollection',
             'features': response,
-            'links': []
+            'links': generate_pagination_links(kwargs['request'])
         }
+

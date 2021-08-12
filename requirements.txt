@@ -23,6 +23,6 @@ tzlocal==2.1
 urllib3==1.26.5
 git+https://github.com/rsmith013/pygeofilter@8052b05#egg=pygeofilter
 git+https://github.com/rsmith013/pygeofilter-elasticsearch#egg=pygeofilter_elasticsearch
-git+https://github.com/rsmith013/stac-fastapi@1def7b8f1b840a63846a29bce8c4aaaf2111799f#egg=stac_fastapi.api&subdirectory=stac_fastapi/api
-git+https://github.com/rsmith013/stac-fastapi@1def7b8f1b840a63846a29bce8c4aaaf2111799f#egg=stac_fastapi.extensions&subdirectory=stac_fastapi/extensions
-git+https://github.com/rsmith013/stac-fastapi@1def7b8f1b840a63846a29bce8c4aaaf2111799f#egg=stac_fastapi.types&subdirectory=stac_fastapi/types
+git+https://github.com/rsmith013/stac-fastapi@e2bc22d8a5d99429f747147c93db6ecd865effe5#egg=stac_fastapi.api&subdirectory=stac_fastapi/api
+git+https://github.com/rsmith013/stac-fastapi@e2bc22d8a5d99429f747147c93db6ecd865effe5#egg=stac_fastapi.extensions&subdirectory=stac_fastapi/extensions
+git+https://github.com/rsmith013/stac-fastapi@e2bc22d8a5d99429f747147c93db6ecd865effe5#egg=stac_fastapi.types&subdirectory=stac_fastapi/types

@@ -27,7 +27,7 @@ class FiltersClient(BaseFiltersClient):
 
         schema = super().get_queryables()
 
-        if id:
+        if collectionId:
             try:
                 collection = ElasticsearchCollection.get(id=collectionId)
             except NotFoundError:

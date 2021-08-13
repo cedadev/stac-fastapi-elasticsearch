@@ -85,7 +85,7 @@ class CoreCrudClient(BaseCoreClient):
             ItemCollection containing items which match the search criteria.
         """
 
-        items = self.get_queryset(**search_request.dict())
+        items, context = self.get_queryset(**search_request.dict())
 
         response = []
         base_url = str(kwargs['request'].base_url)
@@ -98,7 +98,8 @@ class CoreCrudClient(BaseCoreClient):
         return ItemCollection(
             type='FeatureCollection',
             features=response,
-            links=[]
+            links=[],
+            context=context
         )
 
 
@@ -154,7 +155,15 @@ class CoreCrudClient(BaseCoreClient):
 
                 qs = qs.query(filter)
 
-        return qs
+        matched = qs.count()
+        if self.extension_is_enabled('ContextExtension'):
+            context = {
+                'returned':limit if page*limit <= matched-1 else (matched-1)-(page-1)*limit,
+                'limit':limit,
+                'matched':matched,
+            }
+
+        return qs, context
 
     def get_search(
             self,
@@ -184,7 +193,7 @@ class CoreCrudClient(BaseCoreClient):
             **kwargs
         }
 
-        items = self.get_queryset(**search)
+        items, context = self.get_queryset(**search)
 
         response = []
         base_url = str(kwargs['request'].base_url)
@@ -224,7 +233,8 @@ class CoreCrudClient(BaseCoreClient):
         return ItemCollection(
             type='FeatureCollection',
             features=response,
-            links=links
+            links=links,
+            context=context,
         )
 
     def get_item(self, item_id: str, collection_id: str, **kwargs) -> schemas.Item:
@@ -270,7 +280,7 @@ class CoreCrudClient(BaseCoreClient):
             )
         return from_orm
 
-    def all_collections(self, **kwargs) -> List[schemas.Collection]:
+    def all_collections(self, **kwargs):
         """Get all available collections.
 
         Called with `GET /collections`.
@@ -375,7 +385,18 @@ class CoreCrudClient(BaseCoreClient):
         page = int(query_params.pop('page', '1'))
         limit = int(query_params.get('limit', '10'))
         
-        items = self.item_table.search().filter('term', collection_id__keyword=id)[(page-1)*limit:page*limit]
+        items = self.item_table.search().filter('term', collection_id__keyword=id)
+
+        matched = items.count()
+        
+        items = items[(page-1)*limit:page*limit]
+
+        if self.extension_is_enabled('ContextExtension'):
+            context = {
+                'returned':limit if page*limit <= matched-1 else (matched-1)-(page-1)*limit,
+                'limit':limit,
+                'matched':matched,
+            }
 
         # TODO: support filter parameter https://portal.ogc.org/files/96288#filter-param
 
@@ -419,5 +440,6 @@ class CoreCrudClient(BaseCoreClient):
         return ItemCollection(
             type='FeatureCollection',
             features=response,
-            links=links
+            links=links,
+            context=context,
         )

@@ -10,6 +10,7 @@ __contact__ = 'richard.d.smith@stfc.ac.uk'
 
 from stac_fastapi.api.app import StacApi
 from stac_fastapi.extensions.core import (
+    ContextExtension,
     FieldsExtension,
     SortExtension,
     FilterExtension
@@ -21,6 +22,7 @@ from stac_fastapi.elasticsearch.config import settings
 from stac_fastapi.elasticsearch.types import BaseSearch
 
 extensions = [
+        ContextExtension(),
         # FieldsExtension(),
         # SortExtension(),
         FilterExtension(client=FiltersClient())

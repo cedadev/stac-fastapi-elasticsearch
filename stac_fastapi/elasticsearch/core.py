@@ -159,7 +159,8 @@ class CoreCrudClient(BaseCoreClient):
                 qs = qs.query(
                     QueryString(
                         query=q,
-                        default_field='properties.*'
+                        default_field='properties.*',
+                        lenient=True
                     )
                 )
 

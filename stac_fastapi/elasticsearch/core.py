@@ -268,6 +268,15 @@ class CoreCrudClient(BaseCoreClient):
         limit = int(query_params.get('limit', '10'))
 
         collections = self.collection_table.search()[(page-1)*limit:page*limit]
+
+        if self.extension_is_enabled('ContextExtension'):
+            matched = collections.count()
+            context = {
+                'returned':limit if page*limit <= matched-1 else (matched-1)-(page-1)*limit,
+                'limit':limit,
+                'matched':matched,
+            }
+
         response = []
 
         base_url = str(kwargs['request'].base_url)
@@ -306,7 +315,8 @@ class CoreCrudClient(BaseCoreClient):
 
         return {
             'collections':response,
-            'links': links
+            'links': links,
+            'context': context
         }
 
     def get_collection(self, collectionId: str, **kwargs) -> stac_types.Collection:

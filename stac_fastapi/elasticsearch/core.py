@@ -213,7 +213,7 @@ class CoreCrudClient(BaseCoreClient):
             response_item = serializers.ItemSerializer.db_to_stac(item, base_url)
             response.append(response_item)
 
-        links = generate_pagination_links(kwargs['request'])
+        links = generate_pagination_links(kwargs['request'], items.count(), limit)
 
         return stac_types.ItemCollection(
             type='FeatureCollection',
@@ -296,7 +296,6 @@ class CoreCrudClient(BaseCoreClient):
                         'href': urljoin(base_url, f"collections/{coll_response.get('id')}/queryables")
                     }
                 ])
-
 
             response.append(coll_response)
 
@@ -410,6 +409,6 @@ class CoreCrudClient(BaseCoreClient):
         return {
             'type': 'FeatureCollection',
             'features': response,
-            'links': generate_pagination_links(kwargs['request']),
+            'links': generate_pagination_links(kwargs['request'], matched, limit),
             'context': context,
         }

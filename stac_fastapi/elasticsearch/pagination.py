@@ -8,12 +8,13 @@ __copyright__ = 'Copyright 2018 United Kingdom Research and Innovation'
 __license__ = 'BSD - see LICENSE file in top-level package directory'
 __contact__ = 'richard.d.smith@stfc.ac.uk'
 
+import math
 from typing import List, Dict
 from urllib.parse import urljoin
 from stac_pydantic.links import Relations
 
 
-def generate_pagination_links(request) -> List[Dict]:
+def generate_pagination_links(request, matched, limit) -> List[Dict]:
     """Generate page base pagination links."""
 
     link_url = urljoin(str(request.base_url), request.url.path) + '?'
@@ -26,14 +27,11 @@ def generate_pagination_links(request) -> List[Dict]:
 
     links = [
         {
-            'rel': Relations.next,
-            'href': f'{link_url}page={page + 1}'
-        },
-        {
             'rel': Relations.self,
             'href': f'{link_url}page={page}'
         }
     ]
+
     if page != 1:
         links.append(
             {
@@ -41,4 +39,13 @@ def generate_pagination_links(request) -> List[Dict]:
                 'href': f'{link_url}page={page - 1}'
             }
         )
+
+    if page != math.ceil(matched/limit):
+        links.append(
+            {
+                'rel': Relations.next,
+                'href': f'{link_url}page={page + 1}'
+            }
+        )
+
     return links

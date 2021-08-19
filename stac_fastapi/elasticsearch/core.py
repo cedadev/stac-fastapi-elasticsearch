@@ -19,6 +19,7 @@ from stac_fastapi.elasticsearch.models import database
 from stac_fastapi.elasticsearch.models import serializers
 from stac_fastapi.elasticsearch.models.utils import Coordinates
 from stac_fastapi.elasticsearch.pagination import generate_pagination_links
+from stac_fastapi.elasticsearch.context import generate_context
 
 # Stac FastAPI imports
 from stac_fastapi.types.core import BaseCoreClient
@@ -40,7 +41,7 @@ from urllib.parse import urljoin
 from fastapi import HTTPException
 
 # Typing imports
-from typing import Type, Dict, Any, Optional, List, Union
+from typing import Type, Dict, Optional, List, Union
 from elasticsearch_dsl.search import Search
 from elasticsearch_dsl.query import QueryString
 
@@ -72,7 +73,7 @@ class CoreCrudClient(BaseCoreClient):
             conformsTo=self.list_conformance_classes()
         )
 
-    def post_search(self, search_request: Type[BaseSearchPostRequest], **kwargs) -> Dict[str, Any]:
+    def post_search(self, search_request: Type[BaseSearchPostRequest], **kwargs) -> stac_types.ItemCollection:
         """Cross catalog search (POST).
 
         Called with `POST /search`.
@@ -84,7 +85,8 @@ class CoreCrudClient(BaseCoreClient):
             ItemCollection containing items which match the search criteria.
         """
 
-        items, context = self.get_queryset(**search_request.dict())
+        items = self.get_queryset(**search_request.dict())
+        result_count = items.count()
 
         response = []
         base_url = str(kwargs['request'].base_url)
@@ -93,12 +95,23 @@ class CoreCrudClient(BaseCoreClient):
             response_item = serializers.ItemSerializer.db_to_stac(item, base_url)
             response.append(response_item)
 
-        return {
-            'type': 'FeatureCollection',
-            'features': response,
-            'links': [],
-            'context': context,
-        }
+        item_collection = stac_types.ItemCollection(
+            type='FeatureCollection',
+            features=response,
+            links=generate_pagination_links(kwargs['request'], result_count, search_request.limit)
+
+        )
+
+        # Modify response with extensions
+        if self.extension_is_enabled('ContextExtension'):
+            context = generate_context(
+                search_request.limit,
+                result_count,
+                getattr(search_request, 'page', None)
+            )
+            item_collection['context'] = context
+
+        return item_collection
 
     def get_queryset(self, **kwargs) -> Search:
 
@@ -129,15 +142,15 @@ class CoreCrudClient(BaseCoreClient):
 
         if limit := kwargs.get('limit'):
             if limit > 10000:
-                raise(
+                raise (
                     HTTPException(
                         status_code=424,
                         detail="The number of results requested is outside the maximum window 10,000")
-                      )
+                )
             qs.extra(size=limit)
 
         if page := kwargs.get('page'):
-            qs = qs[(page-1)*limit:page*limit]
+            qs = qs[(page - 1) * limit:page * limit]
 
         if self.extension_is_enabled('FilterExtension'):
 
@@ -165,15 +178,7 @@ class CoreCrudClient(BaseCoreClient):
                     )
                 )
 
-        matched = qs.count()
-        if self.extension_is_enabled('ContextExtension'):
-            context = {
-                'returned':limit if page*limit <= matched-1 else (matched-1)-(page-1)*limit,
-                'limit':limit,
-                'matched':matched,
-            }
-
-        return qs, context
+        return qs
 
     def get_search(
             self,
@@ -203,24 +208,31 @@ class CoreCrudClient(BaseCoreClient):
             **kwargs
         }
 
-        items, context = self.get_queryset(**search)
+        items = self.get_queryset(**search)
+        result_count = items.count()
 
         response = []
         base_url = str(kwargs['request'].base_url)
 
         for item in items:
-
             response_item = serializers.ItemSerializer.db_to_stac(item, base_url)
             response.append(response_item)
 
-        links = generate_pagination_links(kwargs['request'], items.count(), limit)
+        links = generate_pagination_links(kwargs['request'], result_count, limit)
 
-        return stac_types.ItemCollection(
+        # Create base response
+        item_collection = stac_types.ItemCollection(
             type='FeatureCollection',
             features=response,
             links=links,
-            context=context,
         )
+
+        # Modify response with extensions
+        if self.extension_is_enabled('ContextExtension'):
+            context = generate_context(limit, result_count, page)
+            item_collection['context'] = context
+
+        return item_collection
 
     def get_item(self, itemId: str, collectionId: str, **kwargs) -> stac_types.Item:
         """Get item by id.
@@ -264,18 +276,8 @@ class CoreCrudClient(BaseCoreClient):
             A list of collections.
         """
         query_params = dict(kwargs['request'].query_params)
-        page = int(query_params.get('page', '1'))
-        limit = int(query_params.get('limit', '10'))
 
-        collections = self.collection_table.search()[(page-1)*limit:page*limit]
-
-        if self.extension_is_enabled('ContextExtension'):
-            matched = collections.count()
-            context = {
-                'returned':limit if page*limit <= matched-1 else (matched-1)-(page-1)*limit,
-                'limit':limit,
-                'matched':matched,
-            }
+        collections = self.collection_table.search()
 
         response = []
 
@@ -313,9 +315,8 @@ class CoreCrudClient(BaseCoreClient):
         ]
 
         return {
-            'collections':response,
+            'collections': response,
             'links': links,
-            'context': context
         }
 
     def get_collection(self, collectionId: str, **kwargs) -> stac_types.Collection:
@@ -342,16 +343,16 @@ class CoreCrudClient(BaseCoreClient):
         if self.extension_is_enabled('FilterExtension'):
             collection['links'].append(
                 {
-                    "rel":"http://www.opengis.net/def/rel/ogc/1.0/queryables",
-                    "type":MimeTypes.json,
-                    "href":urljoin(base_url, f"collections/{collection.get('id')}/queryables")
+                    "rel": "http://www.opengis.net/def/rel/ogc/1.0/queryables",
+                    "type": MimeTypes.json,
+                    "href": urljoin(base_url, f"collections/{collection.get('id')}/queryables")
                 }
             )
 
         return collection
 
     def item_collection(
-            self, collectionId: str, limit: int = 10,  **kwargs
+            self, collectionId: str, limit: int = 10, **kwargs
     ) -> stac_types.ItemCollection:
         """Get all items from a specific collection.
 
@@ -368,19 +369,11 @@ class CoreCrudClient(BaseCoreClient):
         query_params = dict(kwargs['request'].query_params)
         page = int(query_params.get('page', '1'))
         limit = int(query_params.get('limit', '10'))
-        
+
         items = self.item_table.search().filter('term', collection_id__keyword=collectionId)
+        result_count = items.count()
 
-        matched = items.count()
-        
-        items = items[(page-1)*limit:page*limit]
-
-        if self.extension_is_enabled('ContextExtension'):
-            context = {
-                'returned':limit if page*limit <= matched-1 else (matched-1)-(page-1)*limit,
-                'limit':limit,
-                'matched':matched,
-            }
+        items = items[(page - 1) * limit:page * limit]
 
         # TODO: support filter parameter https://portal.ogc.org/files/96288#filter-param
 
@@ -395,20 +388,16 @@ class CoreCrudClient(BaseCoreClient):
                 )
             )
 
-        for item in items:
-            item.base_url = base_url
-            try:
-                from_orm = schemas.Item.from_orm(item)
-            except ValidationError:
-                # Do not append if it does not validate as a STAC
-                # item
-                logger.warning(f'Ignoring {item.item_id}')
-                continue
-            response.append(from_orm)
+        # Generate the base response
+        item_collection = stac_types.ItemCollection(
+            type='FeatureCollection',
+            features=response,
+            links=generate_pagination_links(kwargs['request'], result_count, limit)
+        )
 
-        return {
-            'type': 'FeatureCollection',
-            'features': response,
-            'links': generate_pagination_links(kwargs['request'], matched, limit),
-            'context': context,
-        }
+        # Modify response with extensions
+        if self.extension_is_enabled('ContextExtension'):
+            context = generate_context(limit, result_count, page)
+            item_collection['context'] = context
+
+        return item_collection

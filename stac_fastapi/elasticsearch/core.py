@@ -107,7 +107,7 @@ class CoreCrudClient(BaseCoreClient):
             context = generate_context(
                 search_request.limit,
                 result_count,
-                getattr(search_request, 'page', None)
+                getattr(search_request, 'page')
             )
             item_collection['context'] = context
 
@@ -147,7 +147,7 @@ class CoreCrudClient(BaseCoreClient):
                         status_code=424,
                         detail="The number of results requested is outside the maximum window 10,000")
                 )
-            qs.extra(size=limit)
+            qs = qs.extra(size=limit)
 
         if page := kwargs.get('page'):
             qs = qs[(page - 1) * limit:page * limit]

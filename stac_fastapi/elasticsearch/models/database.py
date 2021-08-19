@@ -73,10 +73,13 @@ class ElasticsearchCollection(Document):
         lower, _ = extent.temporal.lower
         upper, _ = extent.temporal.upper
 
+        lower = lower.isoformat() if lower else None
+        upper = upper.isoformat() if upper else None
+
         coordinates = Coordinates.from_geojson(extent.spatial.coordinates)
 
         return dict(
-            temporal=dict(interval=[[lower.isoformat(), upper.isoformat()]]),
+            temporal=dict(interval=[[lower, upper]]),
             spatial=dict(bbox=[coordinates.to_wgs84()])
         )
 

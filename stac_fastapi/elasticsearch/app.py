@@ -10,6 +10,7 @@ __contact__ = 'richard.d.smith@stfc.ac.uk'
 
 from stac_fastapi.api.app import StacApi
 from stac_fastapi.extensions.core import (
+    ContextExtension,
     FieldsExtension,
     SortExtension,
     FilterExtension
@@ -23,6 +24,7 @@ from stac_fastapi.api.models import GETPagination, POSTPagination
 from stac_fastapi_freetext.free_text import FreeTextExtension
 
 extensions = [
+        ContextExtension(),
         # FieldsExtension(),
         # SortExtension(),
         FilterExtension(client=FiltersClient()),

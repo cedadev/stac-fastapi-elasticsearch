@@ -149,7 +149,7 @@ class CoreCrudClient(BaseCoreClient):
                 )
             qs = qs.extra(size=limit)
 
-        if page := kwargs.get('page'):
+        if page := int(kwargs.get('page')):
             qs = qs[(page - 1) * limit:page * limit]
 
         if self.extension_is_enabled('FilterExtension'):

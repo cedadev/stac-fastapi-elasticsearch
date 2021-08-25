@@ -37,7 +37,7 @@ class FiltersClient(BaseFiltersClient):
             schema['title'] = f'Queryables for {collectionId}'
             schema['description'] = f'Queryable names and values for the {collectionId} collection'
 
-            if summaries := collection.get_summaries('properties'):
+            if summaries := collection.get_summaries():
                 for k, v in summaries.items():
                     prop = {
                         k: {
@@ -48,7 +48,7 @@ class FiltersClient(BaseFiltersClient):
                     }
                     schema['properties'].update(prop)
 
-            if extent := collection.get_extent('extent'):
+            if extent := collection.get_extent():
                 temp_min, temp_max = extent['temporal']['interval'][0]
                 prop = {
                     'datetime': {

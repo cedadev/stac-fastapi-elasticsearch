@@ -42,30 +42,26 @@ class ElasticsearchCollection(Document):
 
         return s
 
-    def get_summaries(self, key: str) -> Optional[Dict]:
+    def get_summaries(self) -> Optional[Dict]:
         """
         Turns the elastic-dsl AttrDict into a dict or None
 
-        :param key:
-        :return:
         """
         try:
-            summaries = getattr(self, key)
+            summaries = getattr(self, 'summaries')
         except AttributeError:
             return
 
         return summaries.to_dict()
 
-    def get_extent(self, key: str) -> Dict:
+    def get_extent(self) -> Dict:
         """
         Takes the elastic-dsl Document and extracts the
         extent information from it.
 
-        :param obj: object to get extent from
-        :param key: key to access extent
         """
         try:
-            extent = getattr(self, key)
+            extent = getattr(self, 'extent')
         except AttributeError:
             return DEFAULT_EXTENT
 
@@ -83,9 +79,9 @@ class ElasticsearchCollection(Document):
             spatial=dict(bbox=[coordinates.to_wgs84()])
         )
 
-    def get_keywords(self, key: str) -> Optional[List]:
+    def get_keywords(self) -> Optional[List]:
         try:
-            keywords = getattr(self, key)
+            keywords = getattr(self, 'keywords')
         except AttributeError:
             return
 

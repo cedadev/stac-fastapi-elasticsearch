@@ -104,11 +104,11 @@ class CollectionSerializer(Serializer):
             stac_version=getattr(db_model, 'stac_version', STAC_VERSION_DEFAULT),
             title=getattr(db_model, 'title', ''),
             description=getattr(db_model, 'description', ''),
-            keywords=db_model.get_keywords('keywords'),
+            keywords=db_model.get_keywords(),
             license=getattr(db_model, 'license', ' '),
             providers=getattr(db_model, 'providers', None),
-            summaries=db_model.get_summaries('properties'),
-            extent=db_model.get_extent('extent'),
+            summaries=db_model.get_summaries(),
+            extent=db_model.get_extent(),
             links=collection_links
         )
 

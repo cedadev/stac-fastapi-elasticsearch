@@ -105,9 +105,9 @@ class CoreCrudClient(BaseCoreClient):
         # Modify response with extensions
         if self.extension_is_enabled('ContextExtension'):
             context = generate_context(
-                search_request.limit,
-                result_count,
-                getattr(search_request, 'page')
+                int(search_request.limit),
+                int(result_count),
+                int(getattr(search_request, 'page'))
             )
             item_collection['context'] = context
 

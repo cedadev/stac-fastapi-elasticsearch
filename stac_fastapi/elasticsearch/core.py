@@ -214,15 +214,12 @@ class CoreCrudClient(BaseCoreClient):
         Returns:
             ItemCollection containing items which match the search criteria.
         """
-        query_params = dict(kwargs['request'].query_params)
-        page = int(query_params.get('page', '1'))
         search = {
             'collections': collections,
             'ids': ids,
             'bbox': bbox,
             'datetime': datetime,
             'limit': limit,
-            'page': page,
             **kwargs
         }
 
@@ -249,7 +246,7 @@ class CoreCrudClient(BaseCoreClient):
 
         # Modify response with extensions
         if self.extension_is_enabled('ContextExtension'):
-            context = generate_context(limit, result_count, page)
+            context = generate_context(limit, result_count, kwargs['page'])
             item_collection['context'] = context
 
         if self.extension_is_enabled('ContextCollectionExtension'):

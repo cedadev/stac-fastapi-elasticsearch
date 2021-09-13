@@ -84,12 +84,15 @@ class CoreCrudClient(BaseCoreClient):
         Returns:
             ItemCollection containing items which match the search criteria.
         """
+        request_dict = search_request.dict()
 
-        items = self.get_queryset(**search_request.dict())
+        items = self.get_queryset(**request_dict)
         result_count = items.count()
 
         response = []
         base_url = str(kwargs['request'].base_url)
+
+        items = items.execute()
 
         for item in items:
             response_item = serializers.ItemSerializer.db_to_stac(item, base_url)
@@ -110,6 +113,17 @@ class CoreCrudClient(BaseCoreClient):
                 getattr(search_request, 'page')
             )
             item_collection['context'] = context
+
+        if self.extension_is_enabled('ContextCollectionExtension'):
+            context = item_collection.get('context', {})
+
+            if request_dict.get('collections'):
+                context['collections'] = request_dict['collections']
+            else:
+                context['collections'] = [c.key for c in items.aggregations.collections]
+
+            if context:
+                item_collection['context'] = context
 
         return item_collection
 
@@ -178,6 +192,10 @@ class CoreCrudClient(BaseCoreClient):
                     )
                 )
 
+        if self.extension_is_enabled('ContextCollectionExtension'):
+            if not collections:
+                qs.aggs.bucket('collections', 'terms', field='collection_id.keyword')
+
         return qs
 
     def get_search(
@@ -214,6 +232,8 @@ class CoreCrudClient(BaseCoreClient):
         response = []
         base_url = str(kwargs['request'].base_url)
 
+        items = items.execute()
+
         for item in items:
             response_item = serializers.ItemSerializer.db_to_stac(item, base_url)
             response.append(response_item)
@@ -231,6 +251,18 @@ class CoreCrudClient(BaseCoreClient):
         if self.extension_is_enabled('ContextExtension'):
             context = generate_context(limit, result_count, page)
             item_collection['context'] = context
+
+        if self.extension_is_enabled('ContextCollectionExtension'):
+            context = item_collection.get('context', {})
+
+            # Short circuit if there collections specified
+            if collections:
+                context['collections'] = collections
+            else:
+                context['collections'] = [c.key for c in items.aggregations.collections]
+
+            if context:
+                item_collection['context'] = context
 
         return item_collection
 

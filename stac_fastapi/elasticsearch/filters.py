@@ -82,7 +82,9 @@ class FiltersClient(BaseFiltersClient):
 
         else:
             query_params = kwargs['request'].query_params
-            collections = query_params.get('collections').split(',')
+            collections = query_params.get('collections', [])
+            if collections:
+                collections = collections.split(',')
 
             properties = {}
 

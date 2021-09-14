@@ -86,12 +86,14 @@ class FiltersClient(BaseFiltersClient):
             if collections:
                 collections = collections.split(',')
 
-            properties = {}
+            properties = None
 
             for collection in collections:
-                if not properties:
+                if properties is None:
+                    # Initialise with first collection
                     properties = self.collection_summaries(collection)
                 else:
+                    # Get properties of following collections
                     new_props = self.collection_summaries(collection)
                     intersect = {}
                     for prop, value in properties.items():
@@ -99,6 +101,11 @@ class FiltersClient(BaseFiltersClient):
                             if value.get('type') == 'string':
                                 intersect[prop] = dict_merge(value, new_props[prop])
                     properties = intersect
+
+                    # If the resultant intersect is an empty dict, short-circuit
+                    # loop.
+                    if not properties:
+                        break
 
             schema['$id'] = f'{kwargs["request"].base_url}/queryables'
             schema['title'] = f'Global queryables, reduced by collection context'

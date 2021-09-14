@@ -16,4 +16,4 @@ class ResultContext(TypedDict, total=False):
 
     returned: int
     limit: int
-    result_count: int
+    matched: int

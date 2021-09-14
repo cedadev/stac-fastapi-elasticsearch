@@ -86,10 +86,10 @@ class FiltersClient(BaseFiltersClient):
             if collections:
                 collections = collections.split(',')
 
-            properties = None
+            properties = {}
 
             for collection in collections:
-                if properties is None:
+                if not properties:
                     # Initialise with first collection
                     properties = self.collection_summaries(collection)
                 else:

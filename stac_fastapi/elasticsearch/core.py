@@ -161,12 +161,21 @@ class CoreCrudClient(BaseCoreClient):
 
             if qfilter := kwargs.get('filter'):
                 ast = parse_json(qfilter)
-                qfilter = to_filter(
-                    ast,
-                    field_mapping,
-                    field_default=Template('properties__${name}__keyword')
-                )
-                qs = qs.query(qfilter)
+                try:
+                    qfilter = to_filter(
+                        ast,
+                        field_mapping,
+                        field_default=Template('properties__${name}__keyword')
+                    )
+                except NotImplementedError:
+                    raise (
+                        HTTPException(
+                            status_code=400,
+                            detail=f'Invalid filter expression'
+                        )
+                    )
+                else:
+                    qs = qs.query(qfilter)
 
         if self.extension_is_enabled('FreeTextExtension'):
             if q := kwargs.get('q'):

@@ -19,5 +19,5 @@ def generate_context(limit: int, result_count: int, page: int) -> ResultContext:
     return ResultContext(
         returned=int(returned),
         limit=int(limit),
-        result_count=int(result_count),
+        matched=int(result_count),
     )

@@ -22,13 +22,15 @@ from stac_fastapi.elasticsearch.config import settings
 from stac_fastapi.api.models import GETPagination, POSTPagination
 
 from stac_fastapi_freetext.free_text import FreeTextExtension
+from stac_fastapi_context_collections.context_collections import  ContextCollectionExtension
 
 extensions = [
         ContextExtension(),
         # FieldsExtension(),
         # SortExtension(),
         FilterExtension(client=FiltersClient()),
-        FreeTextExtension()
+        FreeTextExtension(),
+        ContextCollectionExtension(),
     ]
 
 session = Session.create_from_settings(settings)

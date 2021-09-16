@@ -102,11 +102,12 @@ class ElasticsearchItem(Document):
         s = ElasticsearchAsset.search()
         s = s.filter('term', collection_id__keyword=self.meta.id)
         s = s.exclude('term', categories__keyword='hidden')
+        s = s.exclude('term', magic_number='symlink')
         return s
 
     @property
     def assets(self):
-        return list(self.search_assets())
+        return list(self.search_assets().scan())
 
     def get_stac_assets(self):
         return {asset.meta.id: asset.to_stac() for asset in self.assets}

@@ -102,6 +102,7 @@ class ElasticsearchItem(Document):
         s = ElasticsearchAsset.search()
         s = s.filter('term', collection_id__keyword=self.meta.id)
         s = s.exclude('term', categories__keyword='hidden')
+        s = s.filter('exists', field='filepath_type_location')
         return s
 
     @property

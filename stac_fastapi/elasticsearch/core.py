@@ -110,7 +110,7 @@ class CoreCrudClient(BaseCoreClient):
             context = generate_context(
                 search_request.limit,
                 result_count,
-                getattr(search_request, 'page')
+                int(getattr(search_request, 'page'))
             )
             item_collection['context'] = context
 

@@ -152,7 +152,7 @@ class ElasticsearchAsset(Document):
         Convert the path into a url where you can access the asset
         """
         if self.media_type == 'POSIX':
-            return f'https://data.ceda.ac.uk{self.filepath_type_location}'
+            return f'https://dap.ceda.ac.uk{self.filepath_type_location}'
 
     def get_roles(self) -> Optional[List]:
 

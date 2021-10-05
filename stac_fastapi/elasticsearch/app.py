@@ -13,29 +13,33 @@ from stac_fastapi.extensions.core import (
     ContextExtension,
     FieldsExtension,
     SortExtension,
-    FilterExtension
+    FilterExtension,
+    TransactionExtension
 )
 from stac_fastapi.elasticsearch.session import Session
 from stac_fastapi.elasticsearch.core import CoreCrudClient
 from stac_fastapi.elasticsearch.filters import FiltersClient
+from stac_fastapi.elasticsearch.transactions import TransactionsClient
 from stac_fastapi.elasticsearch.config import settings
 from stac_fastapi.api.models import GETPagination, POSTPagination
+from stac_fastapi.types.config import ApiSettings
 
 from stac_fastapi_freetext.free_text import FreeTextExtension
-from stac_fastapi_context_collections.context_collections import  ContextCollectionExtension
+from stac_fastapi_context_collections.context_collections import ContextCollectionExtension
 
 extensions = [
-        ContextExtension(),
-        # FieldsExtension(),
-        # SortExtension(),
-        FilterExtension(client=FiltersClient()),
-        FreeTextExtension(),
-        ContextCollectionExtension(),
-    ]
+    ContextExtension(),
+    # FieldsExtension(),
+    # SortExtension(),
+    FilterExtension(client=FiltersClient()),
+    FreeTextExtension(),
+    ContextCollectionExtension(),
+    TransactionExtension(client=TransactionsClient(), settings=settings)
+]
 
 session = Session.create_from_settings(settings)
 api = StacApi(
-    settings = settings,
+    settings=settings,
     extensions=extensions,
     client=CoreCrudClient(session=session, extensions=extensions),
     get_pagination_model=GETPagination,

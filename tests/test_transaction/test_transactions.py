@@ -28,6 +28,18 @@ def test_create_item():
     assert r.status_code == 200
 
 
+def test_update_collection():
+    url = f"/collections/{test_collection['id']}"
+    r = client.put(url, json=test_collection)
+    assert r.status_code == 200
+
+
+def test_update_item():
+    url = f"/collections/{test_collection['id']}/items/{test_item['id']}"
+    r = client.put(url, json=test_item)
+    assert r.status_code == 200
+
+
 def test_delete_item():
     url = f"/collections/{test_collection['id']}/items/{test_item['id']}"
     r = client.delete(url)

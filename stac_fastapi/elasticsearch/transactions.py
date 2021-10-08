@@ -211,11 +211,12 @@ class TransactionsClient(BaseTransactionsClient):
 
         # serialise collection, stac to db
         collection = CollectionSerializer.stac_to_db(collection)
-
         # compare the two and update, or remove old_collection and add collection to index
         collection_db.update(**collection.to_dict())
-        collection = CollectionSerializer.db_to_stac(collection, base_url=base_url)
 
+        collection = CollectionSerializer.db_to_stac(
+            ElasticsearchCollection.get(id=collection_id), base_url=base_url
+        )
         return collection
 
     def delete_collection(
@@ -246,8 +247,7 @@ class TransactionsClient(BaseTransactionsClient):
         items = items.filter("term", collection_id__keyword=collection_db.meta.id)
 
         for item in items:
-            item = ItemSerializer.db_to_stac(item, base_url)
-            self.delete_item(item['id'], collection_id, request)
+            self.delete_item(item.meta.id, collection_id, request)
         collection_db.delete()
 
         return collection

@@ -45,7 +45,8 @@ class ElasticsearchCollection(Document):
 
         """
         try:
-            summaries = getattr(self, 'summaries')
+            if summaries := getattr(self, 'summaries') is None:
+                return
         except AttributeError:
             return
 

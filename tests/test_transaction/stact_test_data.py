@@ -1,5 +1,5 @@
 test_collection = {
-    "type": "collection",
+    "type": "Collection",
     "id": "pytest_collection",
     "stac_version": "1.0.0",
     "stac_extensions": [
@@ -31,7 +31,7 @@ test_collection = {
 }
 
 test_item = {
-    "type": "item",
+    "type": "Feature",
     "id": "pytest_item",
     "stac_version": "1.0.0",
     "collection": "pytest_collection",

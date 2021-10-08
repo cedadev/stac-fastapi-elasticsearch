@@ -44,14 +44,15 @@ class TransactionsClient(BaseTransactionsClient):
             The item that was created.
 
         """
-        base_url = f'{request.url.scheme}://{request.url.netloc}'
+        base_url = str(request.base_url)
 
+        '''
         try:
             ItemValidator(**item)
         except ValueError as error:
             raise HTTPError(url=f"{request.url}",
                             code=400, msg=error, hdrs=None, fp=None)
-
+        '''
         try:
             ElasticsearchCollection.get(id=collection_id)
         except NotFoundError:
@@ -83,7 +84,7 @@ class TransactionsClient(BaseTransactionsClient):
         Returns:
             The updated item.
         """
-        base_url = f'{request.url.scheme}://{request.url.netloc}'
+        base_url = str(request.base_url)
 
         try:
             ItemValidator(**item)
@@ -129,7 +130,7 @@ class TransactionsClient(BaseTransactionsClient):
         Returns:
             The deleted item.
         """
-        base_url = f'{request.url.scheme}://{request.url.netloc}'
+        base_url = str(request.base_url)
 
         try:
             ElasticsearchCollection.get(id=collection_id)
@@ -195,7 +196,7 @@ class TransactionsClient(BaseTransactionsClient):
         Returns:
             The updated collection.
         """
-        base_url = f'{request.url.scheme}://{request.url.netloc}'
+        base_url = str(request.base_url)
 
         try:
             CollectionValidator(**collection)
@@ -231,7 +232,7 @@ class TransactionsClient(BaseTransactionsClient):
         Returns:
             The deleted collection.
         """
-        base_url = f'{request.url.scheme}://{request.url.netloc}'
+        base_url = str(request.base_url)
 
         try:
             collection_db = ElasticsearchCollection.get(id=collection_id)
@@ -244,8 +245,10 @@ class TransactionsClient(BaseTransactionsClient):
         items = ElasticsearchItem.search()
         items = items.filter("term", collection_id__keyword=collection_db.meta.id)
 
+        for item in items:
+            item = ItemSerializer.db_to_stac(item, base_url)
+            self.delete_item(item['id'], collection_id, request)
         collection_db.delete()
-        items.delete()
 
         return collection
 

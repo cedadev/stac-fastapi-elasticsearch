@@ -173,6 +173,8 @@ class AssetSerializer(Serializer):
     def stac_to_db(
             cls,
             stac_data: Dict,
+            id: str,
+            collection_id: str,
             exclude_geometry: bool = False
     ) -> elasticsearch_dsl.Document:
         url = urlparse(stac_data.get('href'))
@@ -184,4 +186,6 @@ class AssetSerializer(Serializer):
             magic_number=stac_data.get('type'),
             media_type=stac_data.get('media_type', 'POSIX')
         )
+        asset_db.meta.id = id
+        asset_db.collection_id = collection_id
         return asset_db

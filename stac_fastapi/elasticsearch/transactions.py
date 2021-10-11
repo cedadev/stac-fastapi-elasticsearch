@@ -255,9 +255,9 @@ class TransactionsClient(BaseTransactionsClient):
     @staticmethod
     def create_asset(asset: Dict, item_id: str):
         for asset_id, data in asset.items():
-            db_asset = AssetSerializer.stac_to_db(data)
-            db_asset.meta.id = asset_id
-            db_asset.collection_id = item_id
+            db_asset = AssetSerializer.stac_to_db(stac_data=data,
+                                                  id=asset_id,
+                                                  collection_id=item_id)
             db_asset.save()
         return db_asset
 

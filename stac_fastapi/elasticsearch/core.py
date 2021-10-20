@@ -60,6 +60,12 @@ class CoreCrudClient(BaseCoreClient):
     item_table: Type[database.ElasticsearchItem] = attr.ib(default=database.ElasticsearchItem)
     collection_table: Type[database.ElasticsearchCollection] = attr.ib(default=database.ElasticsearchCollection)
 
+    def landing_page(self, **kwargs) -> stac_types.LandingPage:
+        _landing_page = BaseCoreClient.landing_page(self, **kwargs)
+        _landing_page['description'] = 'Test API; this is experimental.'
+        _landing_page['title'] = 'stac-fastapi-test'
+        return _landing_page
+
     def conformance(self, **kwargs) -> stac_types.Conformance:
         """Conformance classes.
 

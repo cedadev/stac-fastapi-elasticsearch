@@ -39,7 +39,9 @@ api = StacApi(
     extensions=extensions,
     client=CoreCrudClient(session=session, extensions=extensions),
     get_pagination_model=GETPagination,
-    post_pagination_model=POSTPagination
+    post_pagination_model=POSTPagination,
+    description=settings.STAC_DESCRIPTION,
+    title=settings.STAC_TITLE,
 )
 
 app = api.app

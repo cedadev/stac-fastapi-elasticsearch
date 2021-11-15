@@ -1,4 +1,6 @@
 name: stac-fastapi-elasticsearch
+on:
+  [push]
 
 jobs:
   test:

@@ -34,7 +34,7 @@ jobs:
 
       - name: install requirements
         run: |
-          pip install -r ./requirements.txt
+          pip install -r ./requirements.txt && pip install django-flexi-settings==0.1.1
 
       - name: Install elasticsearch stac-fastapi
         run: |

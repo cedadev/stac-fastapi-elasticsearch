@@ -38,7 +38,10 @@ setup(
         'elasticsearch-dsl'
     ],
     extras_require={
-        'server': ["uvicorn[standard]>=0.12.0,<0.14.0"]
+        'server': ["uvicorn[standard]>=0.12.0,<0.14.0"],
+        'dev': [
+            'pytest',
+        ]
     },
     entry_points={
     }

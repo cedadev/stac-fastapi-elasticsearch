@@ -11,13 +11,14 @@ services:
       - STAC_ELASTICSEARCH_SETTINGS=flexi_settings.settings
       - DJANGO_FLEXI_SETTINGS_ROOT=/app/conf/settings.py
       - APP_HOST=0.0.0.0
-      - APP_PORT=8080
+      - APP_PORT=8081
     ports:
-      - 8080:8080
+      - 8081:8081
     volumes:
     - ./stac_fastapi:/app/stac_fastapi
     - ./scripts:/app/scripts
     - ./conf:/app/conf
+    - ./tests:/app/tests
     depends_on:
       - database
     command:

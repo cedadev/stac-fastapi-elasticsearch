@@ -12,4 +12,4 @@ COPY . /app
 
 RUN pip install -r ./requirements.txt && \
     pip install django-flexi-settings==0.1.1 && \
-    pip install -e .[server]
+    pip install -e .[server,dev]

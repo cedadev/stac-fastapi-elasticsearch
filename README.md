@@ -1,5 +1,6 @@
 # Elasticsearch Backend for the stac-fastapi server
 
+[![stac-fastapi-elasticsearch](https://github.com/cedadev/stac-fastapi-elasticsearch/actions/workflows/test.yml/badge.svg)](https://github.com/cedadev/stac-fastapi-elasticsearch/actions/workflows/test.yml)
 
 ## Getting started
 

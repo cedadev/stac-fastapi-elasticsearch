@@ -2,4 +2,4 @@
 .idea
 *.egg-info
 venv
-settings.py
+stac_fastapi/elasticsearch/settings.py

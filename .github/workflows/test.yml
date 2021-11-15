@@ -11,12 +11,12 @@ jobs:
       db_service:
         image: docker.elastic.co/elasticsearch/elasticsearch:7.14.2
         env:
-          node.name=es01
-          cluster.name=stac-cluster
-          discovery.type=single-node
-          network.host=0.0.0.0
-          http.port=9200
-          "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+          node.name: es01
+          cluster.name: stac-cluster
+          discovery.type:single-node
+          network.host: 0.0.0.0
+          http.port: 9200
+          ES_JAVA_OPTS: -Xms512m -Xmx512m
         ports:
           - 9200:9200
     steps:
@@ -44,8 +44,8 @@ jobs:
         run: |
           pipenv run pytest -svvv
         env:
-          STAC_ELASTICSEARCH_SETTINGS=flexi_settings.settings
-          DJANGO_FLEXI_SETTINGS_ROOT=/app/conf/settings.py
-          APP_HOST=0.0.0.0
-          APP_PORT=8081
+          STAC_ELASTICSEARCH_SETTINGS: flexi_settings.settings
+          DJANGO_FLEXI_SETTINGS_ROOT: /app/conf/settings.py
+          APP_HOST: 0.0.0.0
+          APP_PORT: 8081
 

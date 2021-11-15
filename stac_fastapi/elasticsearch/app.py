@@ -45,3 +45,23 @@ api = StacApi(
 )
 
 app = api.app
+
+
+def run():
+    """Run app from command line using uvicorn if available."""
+    try:
+        import uvicorn
+
+        uvicorn.run(
+            "stac_fastapi.elasticsearch.app:app",
+            host=settings.APP_HOST,
+            port=settings.APP_PORT,
+            log_level="info",
+            reload=False,
+        )
+    except ImportError:
+        raise RuntimeError("Uvicorn must be installed in order to use command")
+
+
+if __name__ == "__main__":
+    run()

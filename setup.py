@@ -41,6 +41,7 @@ setup(
         'server': ["uvicorn[standard]>=0.12.0,<0.14.0"],
         'dev': [
             'pytest',
+            'requests'
         ]
     },
     entry_points={

@@ -9,7 +9,7 @@ __license__ = 'BSD - see LICENSE file in top-level package directory'
 __contact__ = 'richard.d.smith@stfc.ac.uk'
 
 import pytest
-
+from starlette.testclient import TestClient
 from typing import List
 
 from stac_fastapi.api.app import StacApi
@@ -57,3 +57,10 @@ def api_client(db_session, extensions):
         description=settings.STAC_DESCRIPTION,
         title=settings.STAC_TITLE,
     )
+
+
+@pytest.fixture
+def app_client(api_client):
+
+    with TestClient(api_client.app) as test_app:
+        yield test_app

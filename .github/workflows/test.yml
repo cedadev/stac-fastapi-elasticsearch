@@ -5,6 +5,7 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+    container: python:3.8
     timeout-minutes: 10
 
     services:
@@ -23,10 +24,10 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v2
 
-      - name: Setup Python
-        uses: actions/setup-python@v2
-        with:
-          python-version: "3.8"
+#      - name: Setup Python
+#        uses: actions/setup-python@v2
+#        with:
+#          python-version: "3.8"
 
       - name: install pipenv
         run: |
@@ -42,7 +43,7 @@ jobs:
 
       - name: Ingest the test data
         run: |
-          python ./scripts/ingest_test_data.py --host localhost:9200
+          python ./scripts/ingest_test_data.py
 
       - name: Run test suite
         run: |
@@ -50,7 +51,6 @@ jobs:
         env:
           STAC_ELASTICSEARCH_SETTINGS: flexi_settings.settings
           DJANGO_FLEXI_SETTINGS_ROOT: ./conf/settings.py
-          FLEXI_RUN_ENV: test
           APP_HOST: 0.0.0.0
           APP_PORT: 8081
 

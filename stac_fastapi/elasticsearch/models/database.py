@@ -94,13 +94,13 @@ class ElasticsearchItem(Document):
     @classmethod
     def search(cls, **kwargs):
         s = super().search(**kwargs)
-        s = s.filter('term', type__keyword='item')
+        s = s.filter('term', type='item')
 
         return s
 
     def search_assets(self):
         s = ElasticsearchAsset.search()
-        s = s.filter('term', collection_id__keyword=self.meta.id)
+        s = s.filter('term', collection_id=self.meta.id)
         s = s.exclude('term', categories__keyword='hidden')
         s = s.filter('exists', field='filepath_type_location')
         return s

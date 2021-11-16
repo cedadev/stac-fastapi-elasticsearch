@@ -44,3 +44,24 @@ def test_filter_extension_router(api_client):
     )
 
     assert not filter_routes - api_routes
+
+
+def test_app_search_response(app_client):
+    """Check application returns a FeatureCollection"""
+
+    resp = app_client.get("/search")
+    assert resp.status_code == 200
+    resp_json = resp.json()
+
+    assert resp_json.get("type") == "FeatureCollection"
+
+
+def test_app_context_extension(app_client):
+    """Check context extension returns the correct number of results"""
+
+    resp = app_client.get("/search")
+    assert resp.status_code == 200
+    resp_json = resp.json()
+
+    assert "context" in resp_json
+    assert resp_json["context"]["returned"] ==  resp_json["context"]["matched"] == 2

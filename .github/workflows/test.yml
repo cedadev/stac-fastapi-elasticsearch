@@ -42,7 +42,7 @@ jobs:
 
       - name: Ingest the test data
         run: |
-          python ./scripts/ingest_test_data
+          python ./scripts/ingest_test_data.py
 
       - name: Run test suite
         run: |

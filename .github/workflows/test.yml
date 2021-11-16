@@ -42,7 +42,7 @@ jobs:
 
       - name: Ingest the test data
         run: |
-          python ./scripts/ingest_test_data.py
+          python ./scripts/ingest_test_data.py --host localhost:9200
 
       - name: Run test suite
         run: |
@@ -50,6 +50,7 @@ jobs:
         env:
           STAC_ELASTICSEARCH_SETTINGS: flexi_settings.settings
           DJANGO_FLEXI_SETTINGS_ROOT: ./conf/settings.py
+          FLEXI_RUN_ENV: test
           APP_HOST: 0.0.0.0
           APP_PORT: 8081
 

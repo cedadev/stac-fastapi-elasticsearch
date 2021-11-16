@@ -14,7 +14,7 @@ from stac_fastapi.elasticsearch.types.context import ResultContext
 def generate_context(limit: int, result_count: int, page: int) -> ResultContext:
     """Generate context"""
 
-    returned = limit if page * limit <= result_count - 1 else (result_count - 1) - (page - 1) * limit
+    returned = limit if page * limit <= result_count else result_count - (page - 1) * limit
 
     return ResultContext(
         returned=int(returned),

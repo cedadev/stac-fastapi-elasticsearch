@@ -20,6 +20,7 @@ from stac_fastapi.elasticsearch.models import serializers
 from stac_fastapi.elasticsearch.models.utils import Coordinates
 from stac_fastapi.elasticsearch.pagination import generate_pagination_links
 from stac_fastapi.elasticsearch.context import generate_context
+from stac_fastapi.elasticsearch.utils import secure_base
 
 # Stac FastAPI imports
 from stac_fastapi.types.core import BaseCoreClient
@@ -90,7 +91,9 @@ class CoreCrudClient(BaseCoreClient):
         result_count = items.count()
 
         response = []
-        base_url = str(kwargs['request'].base_url)
+        base_url = secure_base(
+            str(kwargs['request'].base_url)
+        )
 
         items = items.execute()
 
@@ -236,7 +239,9 @@ class CoreCrudClient(BaseCoreClient):
         result_count = items.count()
 
         response = []
-        base_url = str(kwargs['request'].base_url)
+        base_url = secure_base(
+            str(kwargs['request'].base_url)
+        )
 
         items = items.execute()
 
@@ -301,7 +306,9 @@ class CoreCrudClient(BaseCoreClient):
                 )
             )
 
-        base_url = str(kwargs['request'].base_url)
+        base_url = secure_base(
+            str(kwargs['request'].base_url)
+        )
 
         return serializers.ItemSerializer.db_to_stac(item, base_url)
 
@@ -319,7 +326,9 @@ class CoreCrudClient(BaseCoreClient):
 
         response = []
 
-        base_url = str(kwargs['request'].base_url)
+        base_url = secure_base(
+            str(kwargs['request'].base_url)
+        )
 
         for collection in collections:
             collection.base_url = base_url
@@ -373,7 +382,9 @@ class CoreCrudClient(BaseCoreClient):
         except NotFoundError:
             raise (NotFoundError(404, f'Collection: {collectionId} not found'))
 
-        base_url = str(kwargs['request'].base_url)
+        base_url = secure_base(
+            str(kwargs['request'].base_url)
+        )
         collection.base_url = base_url
 
         collection = serializers.CollectionSerializer.db_to_stac(collection, base_url)
@@ -417,7 +428,9 @@ class CoreCrudClient(BaseCoreClient):
 
         response = []
 
-        base_url = str(kwargs['request'].base_url)
+        base_url = secure_base(
+            str(kwargs['request'].base_url)
+        )
 
         for item in items:
             response.append(

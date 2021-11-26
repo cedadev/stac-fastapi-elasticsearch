@@ -11,6 +11,18 @@ __contact__ = 'richard.d.smith@stfc.ac.uk'
 
 import collections
 
+from stac_fastapi.elasticsearch.config import settings
+
+
+def secure_base(url):
+    """Return a secure base_url"""
+    use_ssl = getattr(settings, 'SECURE', True)
+    
+    if use_ssl:
+        return url.replace('http://', 'https://')
+
+    return url
+
 
 def dict_merge(*args, add_keys=True) -> dict:
     assert len(args) >= 2, "dict_merge requires at least two dicts to merge"

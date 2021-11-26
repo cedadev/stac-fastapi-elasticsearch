@@ -9,6 +9,7 @@ __license__ = 'BSD - see LICENSE file in top-level package directory'
 __contact__ = 'richard.d.smith@stfc.ac.uk'
 
 from stac_fastapi.elasticsearch.models.database import ElasticsearchCollection
+from stac_fastapi.elasticsearch.utils import secure_base
 
 from stac_fastapi.types.core import BaseFiltersClient
 from .utils import dict_merge
@@ -70,12 +71,15 @@ class FiltersClient(BaseFiltersClient):
     ) -> Dict[str, Any]:
 
         schema = super().get_queryables()
+        base_url = secure_base(
+            kwargs["request"].base_url,
+        )
 
         if collectionId:
 
             properties = self.collection_summaries(collectionId)
 
-            schema['$id'] = f'{kwargs["request"].base_url}/{collectionId}/queryables'
+            schema['$id'] = f'{base_url}/{collectionId}/queryables'
             schema['title'] = f'Queryables for {collectionId}'
             schema['description'] = f'Queryable names and values for the {collectionId} collection'
             schema['properties'] = properties
@@ -107,7 +111,7 @@ class FiltersClient(BaseFiltersClient):
                     if not properties:
                         break
 
-            schema['$id'] = f'{kwargs["request"].base_url}/queryables'
+            schema['$id'] = f'{base_url}/queryables'
             schema['title'] = f'Global queryables, reduced by collection context'
             schema['description'] = f'Queryable names and values'
             schema['properties'] = properties

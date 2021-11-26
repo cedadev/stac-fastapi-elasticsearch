@@ -13,11 +13,16 @@ from typing import List, Dict
 from urllib.parse import urljoin
 from stac_pydantic.links import Relations
 
+from stac_fastapi.elasticsearch.utils import secure_base
 
-def generate_pagination_links(request, matched, limit) -> List[Dict]:
+
+def generate_pagination_links(request, matched, limit, use_ssl=True) -> List[Dict]:
     """Generate page base pagination links."""
 
-    link_url = urljoin(str(request.base_url), request.url.path) + '?'
+    base_url = secure_base(
+        str(request.base_url)
+    )
+    link_url = urljoin(base_url, request.url.path) + '?'
     page = int(request.query_params.get('page', 1))
 
     for key, value in request.query_params.items():

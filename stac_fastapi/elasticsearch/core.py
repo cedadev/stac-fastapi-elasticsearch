@@ -331,7 +331,7 @@ class CoreCrudClient(BaseCoreClient):
             if self.extension_is_enabled('FilterExtension'):
                 coll_response['links'].extend([
                     {
-                        'rel': 'http://www.opengis.net/def/rel/ogc/1.0/queryables',
+                        'rel': 'https://www.opengis.net/def/rel/ogc/1.0/queryables',
                         'type': MimeTypes.json,
                         'href': urljoin(base_url, f"collections/{coll_response.get('id')}/queryables")
                     }
@@ -381,7 +381,7 @@ class CoreCrudClient(BaseCoreClient):
         if self.extension_is_enabled('FilterExtension'):
             collection['links'].append(
                 {
-                    "rel": "http://www.opengis.net/def/rel/ogc/1.0/queryables",
+                    "rel": "https://www.opengis.net/def/rel/ogc/1.0/queryables",
                     "type": MimeTypes.json,
                     "href": urljoin(base_url, f"collections/{collection.get('id')}/queryables")
                 }

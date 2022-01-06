@@ -11,6 +11,8 @@ __contact__ = 'richard.d.smith@stfc.ac.uk'
 from stac_fastapi.api.app import StacApi
 from stac_fastapi.extensions.core import (
     ContextExtension,
+    # FieldsExtension,
+    # SortExtension,
     FilterExtension,
     PaginationExtension
 )

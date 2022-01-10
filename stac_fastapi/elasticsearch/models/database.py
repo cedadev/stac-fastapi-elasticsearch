@@ -38,8 +38,7 @@ class ElasticsearchCollection(Document):
     @classmethod
     def search(cls, **kwargs):
         s = super().search(**kwargs)
-        s = s.filter('term', type='collection')
-
+        s = s.filter('term', type='collection') 
         return s
 
     def get_summaries(self) -> Optional[Dict]:

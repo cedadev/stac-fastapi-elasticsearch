@@ -20,9 +20,9 @@ docker-run: image
 docker-shell:
 	$(run_docker) /bin/bash
 
-.PHONY: test-elasticsearch
+.PHONY: test-elasticsearch 
 test-elasticsearch: run-sample-elasticsearch
-	$(run_docker) /bin/bash -c './scripts/wait-for-it.sh database:9200 && cd /app/tests && pytest'
+	$(run_docker) /bin/bash -c './scripts/wait-for-it.sh database:9200 && cd /app/tests && pytest -s -k test_search_point_intersects' 
 
 .PHONY: run-database
 run-database:

@@ -67,97 +67,93 @@ def test_app_context_extension(app_client):
     assert resp_json["context"]["returned"] ==  resp_json["context"]["matched"] == 2
 
 
-# def test_search_invalid_date(load_test_data, app_client, postgres_transactions):
-#     """Given an invalid date, we should get a 400"""
-#     item = load_test_data("test_item.json")
-#     postgres_transactions.create_item(item, request=MockStarletteRequest)
-#
-#     params = {
-#         "datetime": "2020-XX-01/2020-10-30",
-#         "collections": [item["collection"]],
-#     }
-#
-#     resp = app_client.post("/search", json=params)
-#     assert resp.status_code == 400
-#
-#
+def test_search_for_collection(app_client):
+    pass
 
-# def test_search_point_intersects(load_test_data, app_client, postgres_transactions):
-#    """Check that items intersect with the given point.
-#    As our test items don't contain a bounding bbox, this will return 0 results.
-#    """
 
-#     item = load_test_data("test_item.json")
-#     postgres_transactions.create_item(item, request=MockStarletteRequest)
-#
-#     point = [150.04, -33.14]
-#     intersects = {"type": "Point", "coordinates": point}
-#
-#     params = {
-#         "intersects": intersects,
-#         "collections": [item["collection"]],
-#     }
-#     resp = app_client.post("/search", json=params)
-#     assert resp.status_code == 200
-#     resp_json = resp.json()
-#     assert len(resp_json["features"]) == 1
-#
-#
-# def test_datetime_non_interval(load_test_data, app_client, postgres_transactions):
-#       """Checking search with a single date. Need to provide an example datetime in test data"""
-#     item = load_test_data("test_item.json")
-#     postgres_transactions.create_item(item, request=MockStarletteRequest)
-#     alternate_formats = [
-#         "2020-02-12T12:30:22+00:00",
-#         "2020-02-12T12:30:22.00Z",
-#         "2020-02-12T12:30:22Z",
-#         "2020-02-12T12:30:22.00+00:00",
-#     ]
-#     for date in alternate_formats:
-#         params = {
-#             "datetime": date,
-#             "collections": [item["collection"]],
-#         }
-#
-#         resp = app_client.post("/search", json=params)
-#         assert resp.status_code == 200
-#         resp_json = resp.json()
-#         # datetime is returned in this format "2020-02-12T12:30:22+00:00"
-#         assert resp_json["features"][0]["properties"]["datetime"][0:19] == date[0:19]
-#
-#
-# def test_bbox_3d(load_test_data, app_client, postgres_transactions):
-#     """TEst 3d bbox. Test data doesn't have a bbox so will fail."""
-#     item = load_test_data("test_item.json")
-#     postgres_transactions.create_item(item, request=MockStarletteRequest)
-#
-#     australia_bbox = [106.343365, -47.199523, 0.1, 168.218365, -19.437288, 0.1]
-#     params = {
-#         "bbox": australia_bbox,
-#         "collections": [item["collection"]],
-#     }
-#     resp = app_client.post("/search", json=params)
-#     assert resp.status_code == 200
-#     resp_json = resp.json()
-#     assert len(resp_json["features"]) == 1
-#
-#
-#
-# def test_search_line_string_intersects(
-#     load_test_data, app_client, postgres_transactions
-# ):
-#     """TEst linstring intersect. Test data doesn't have a bbox so will fail."""
-#     item = load_test_data("test_item.json")
-#     postgres_transactions.create_item(item, request=MockStarletteRequest)
-#
-#     line = [[150.04, -33.14], [150.22, -33.89]]
-#     intersects = {"type": "LineString", "coordinates": line}
-#
-#     params = {
-#         "intersects": intersects,
-#         "collections": [item["collection"]],
-#     }
-#     resp = app_client.post("/search", json=params)
-#     assert resp.status_code == 200
-#     resp_json = resp.json()
-#     assert len(resp_json["features"]) == 1
+def test_search_date_interval(app_client):
+    """Check searching with a date interval"""
+    
+    params = {
+        "datetime": "2013-12-01T00:00:00Z/2014-05-01T00:00:00Z"
+    }
+
+    resp = app_client.post("/search", json=params)
+    assert resp.status_code == 200
+    resp_json = resp.json()
+    assert resp_json["context"]["returned"] == resp_json["context"]["matched"] == 1
+    assert resp_json["features"][0]["properties"]["datetime"] == "2014-04-09T00:00:00Z"
+
+
+def test_search_invalid_date(app_client):
+    """Given an invalid date, we should get a 400"""
+    
+    params = {
+        "datetime": "2020-XX-01/2020-10-30",
+    }
+    resp = app_client.post("/search", json=params)
+    assert resp.status_code == 400
+
+
+def test_datetime_non_interval(app_client):
+    """Checking search with a single date."""
+    alternate_formats = [
+        "2008-01-31T00:00:00+00:00",
+        "2008-01-31T00:00:00.00Z",
+        "2008-01-31T00:00:00Z",
+        "2008-01-31T00:00:00.00+00:00",
+    ]
+    for date in alternate_formats:
+        params = {
+            "datetime": date,
+        }
+        resp = app_client.post("/search", json=params)
+        assert resp.status_code == 200
+
+        resp_json = resp.json()
+        assert resp_json["context"]["returned"] == resp_json["context"]["matched"] == 1
+        assert resp_json["features"][0]["properties"]["datetime"][0:19] == date[0:19]
+
+
+def test_search_point_intersects(app_client):
+    """Check that items intersect with the given point.
+    As our test items don't contain a bounding bbox, this will return 0 results.
+    """
+
+    point = [150.04, -33.14]
+    intersects = {"type": "Point", "coordinates": point}
+
+    params = {
+        "intersects": intersects,
+    }
+    resp = app_client.post("/search", json=params)
+    assert resp.status_code == 200
+    resp_json = resp.json()
+    assert len(resp_json["features"]) == 1
+
+
+def test_bbox_3d(app_client):
+    """Test 3d bbox"""
+    australia_bbox = [106.343365, -47.199523, 0.1, 168.218365, -19.437288, 0.1]
+    params = {
+        "bbox": australia_bbox,
+    }
+    
+    resp = app_client.post("/search", json=params)
+    assert resp.status_code == 200
+    resp_json = resp.json()
+    assert len(resp_json["features"]) == 1
+
+
+def test_search_line_string_intersects(app_client):
+    """Test linstring intersect. Test data doesn't have a bbox so will fail."""
+    line = [[150.04, -33.14], [150.22, -33.89]]
+    intersects = {"type": "LineString", "coordinates": line}
+
+    params = {
+        "intersects": intersects,
+    }
+    resp = app_client.post("/search", json=params)
+    assert resp.status_code == 200
+    resp_json = resp.json()
+    assert len(resp_json["features"]) == 1

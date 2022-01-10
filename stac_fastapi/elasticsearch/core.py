@@ -85,7 +85,7 @@ class CoreCrudClient(BaseCoreClient):
             ItemCollection containing items which match the search criteria.
         """
         request_dict = search_request.dict()
-
+        
         items = self.get_queryset(**request_dict)
         result_count = items.count()
 
@@ -130,7 +130,6 @@ class CoreCrudClient(BaseCoreClient):
     def get_queryset(self, **kwargs) -> Search:
 
         # base_search = BaseSearch(**kwargs)
-
         qs = self.item_table.search()
 
         if collections := kwargs.get('collections'):
@@ -139,21 +138,43 @@ class CoreCrudClient(BaseCoreClient):
         if items := kwargs.get('ids'):
             qs = qs.filter('terms', item_id__keyword=items)
 
+        if intersects := kwargs.get('intersects'):
+            
+            qs = qs.filter('geo_shape', spatial__bbox={
+                'shape': {
+                    'type': intersects.get('type'),
+                    'coordinates': intersects.get('coordinates')
+                }
+            })
         if bbox := kwargs.get('bbox'):
+            
             qs = qs.filter('geo_shape', spatial__bbox={
                 'shape': {
                     'type': 'envelope',
                     'coordinates': Coordinates.from_wgs84(bbox).to_geojson()
                 }
             })
+        
+        if datetime := kwargs.get('datetime'):
+            # based on datetime being provided in item, need to add functionality for if datetime=null and start_datetime and end_datetime are provided in the item
+            # if a date range, get start and end datetimes and find any items with dates in this range
+            # .. identifies an open date range
+            # if one datetime, find any items with dates that this intersects
+            if "/" in datetime:
+                start_date = datetime.split('/')[0]
+                end_date = datetime.split('/')[1]
 
-        if kwargs.get('datetime'):
-            if start_date := kwargs.get('start_date'):
-                qs = qs.filter('range', properties__datetime={'gte': start_date})
+                if start_date != '..':
+                    qs = qs.filter('range', properties__datetime={'gte': start_date})
 
-            if end_date := kwargs.get('end_date'):
-                qs = qs.filter('range', properties__datetime={'lte': end_date})
+                if end_date != '..':
+                    qs = qs.filter('range', properties__datetime={'lte': end_date})
 
+            else:
+
+                qs = qs.filter('match', properties__datetime=kwargs.get('datetime'))
+                
+    
         if limit := kwargs.get('limit'):
             if limit > 10000:
                 raise (
@@ -204,7 +225,8 @@ class CoreCrudClient(BaseCoreClient):
         if self.extension_is_enabled('ContextCollectionExtension'):
             if not collections:
                 qs.aggs.bucket('collections', 'terms', field='collection_id.keyword')
-
+        
+        print(qs.to_dict())
         return qs
 
     def get_search(

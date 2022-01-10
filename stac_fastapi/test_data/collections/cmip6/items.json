@@ -4,7 +4,7 @@
     "_source": {
       "item_id": "a3641b64ea5a3aba7a2c40663e798246",
       "type": "item",
-      "bbox": [-180.0, -90, 180.0, 90.0],
+      "bbox":[-180.0,90.0,180.0,-90.0],
       "properties": {
         "datetime": "2008-01-31T00:00:00Z",
         "general_data_type": "climate models",
@@ -29,9 +29,8 @@
     "_source": {
       "item_id": "8c462277a5877d4adc00642e2a78af6e",
       "type": "item",
-      "bbox": [-180.0, -90, -100.0, 180.0, 90.0, 0.0],
       "properties": {
-        "datetime": "2008-01-31T00:00:00Z",
+        "datetime": "2014-04-09T00:00:00Z",
         "general_data_type": "climate models",
         "data_interface": "gc",
         "data_provider": "PANGEO",

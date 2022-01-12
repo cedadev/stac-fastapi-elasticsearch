@@ -1,0 +1,51 @@
+name: stac-fastapi-elasticsearch
+on:
+  [push]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    container: python:3.8
+    timeout-minutes: 10
+
+    services:
+      database:
+        image: docker.elastic.co/elasticsearch/elasticsearch:7.14.2
+        env:
+          node.name: es01
+          cluster.name: stac-cluster
+          discovery.type: single-node
+          network.host: 0.0.0.0
+          http.port: 9200
+          ES_JAVA_OPTS: -Xms512m -Xmx512m
+        ports:
+          - 9200:9200
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v2
+
+      - name: install pipenv
+        run: |
+          python -m pip install --upgrade pipenv wheel
+
+      - name: install requirements
+        run: |
+          pip install -r ./requirements.txt && pip install django-flexi-settings==0.1.1
+
+      - name: Install elasticsearch stac-fastapi
+        run: |
+          pip install .[dev,server]
+
+      - name: Ingest the test data
+        run: |
+          python ./scripts/ingest_test_data.py
+
+      - name: Run test suite
+        run: |
+          pipenv run pytest -svvv
+        env:
+          STAC_ELASTICSEARCH_SETTINGS: flexi_settings.settings
+          DJANGO_FLEXI_SETTINGS_ROOT: ./conf/settings.py
+          APP_HOST: 0.0.0.0
+          APP_PORT: 8081
+

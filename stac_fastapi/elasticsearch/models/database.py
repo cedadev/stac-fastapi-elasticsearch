@@ -92,15 +92,15 @@ class ElasticsearchItem(Document):
     @classmethod
     def search(cls, **kwargs):
         s = super().search(**kwargs)
-        s = s.filter('term', type__keyword='item')
+        s = s.filter('term', type='item')
 
         return s
 
     def search_assets(self):
         s = ElasticsearchAsset.search()
-        s = s.filter('term', collection_id__keyword=self.meta.id)
+        s = s.filter('term', collection_id=self.meta.id)
         s = s.exclude('term', categories__keyword='hidden')
-        s = s.exclude('term', magic_number='symlink')
+        s = s.filter('exists', field='filepath_type_location')
         return s
 
     @property
@@ -149,8 +149,8 @@ class ElasticsearchAsset(Document):
         """
         Convert the path into a url where you can access the asset
         """
-        if self.media_type == 'POSIX':
-            return f'http://data.ceda.ac.uk{self.filepath_type_location}'
+        if getattr(self, 'media_type','POSIX'):
+            return f'https://dap.ceda.ac.uk{self.filepath_type_location}'
 
     def get_roles(self) -> Optional[List]:
 

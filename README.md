@@ -1,5 +1,6 @@
 # Elasticsearch Backend for the stac-fastapi server
 
+[![stac-fastapi-elasticsearch](https://github.com/cedadev/stac-fastapi-elasticsearch/actions/workflows/test.yml/badge.svg)](https://github.com/cedadev/stac-fastapi-elasticsearch/actions/workflows/test.yml)
 
 ## Getting started
 
@@ -25,3 +26,12 @@ export STAC_ELASTICSEARCH_SETTINGS=stac_fastapi.elasticsearch.settings
 uvicorn stac_fastapi.elasticsearch.app:app --reload
 ```
 
+### Demo Application
+
+You can use docker-compose to create a demo instance. This will create an elasticsearch node, add some sample data and run the API.
+
+```bash
+make run-sample-elasticsearch
+```
+
+**NOTE: You will need to build the image first** `docker-compose build`

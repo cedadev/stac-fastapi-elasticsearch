@@ -1,0 +1,56 @@
+{
+  "mappings": {
+    "properties": {
+      "checksum": {
+        "properties": {
+          "checksum": {
+            "type": "keyword"
+          },
+          "time": {
+            "type": "date"
+          }
+        }
+      },
+      "collection_id": {
+        "type": "keyword"
+      },
+      "extension": {
+        "type": "keyword"
+      },
+      "filename": {
+        "type": "text",
+        "fields": {
+          "keyword": {
+            "type": "keyword"
+          }
+        }
+      },
+      "location": {
+        "type": "text",
+        "analyzer": "path_analyzer"
+      },
+      "item_id": {
+        "type": "keyword"
+      },
+      "media_type": {
+        "type": "keyword"
+      }
+    }
+  },
+  "settings": {
+    "number_of_shards": "1",
+    "analysis": {
+      "analyzer": {
+        "path_analyzer": {
+          "tokenizer": "path_tokenizer"
+        }
+      },
+      "tokenizer": {
+        "path_tokenizer": {
+          "type": "path_hierarchy"
+        }
+      }
+    },
+    "number_of_replicas": "0"
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "mappings": {
+    "properties": {
+      "collection_id": {
+        "type": "keyword"
+      },
+      "item_id": {
+        "type": "keyword"
+      },
+      "type": {
+        "type": "keyword"
+      },
+      "bbox": {
+        "type": "geo_shape"
+      },
+      "geometry": {
+        "type": "geo_shape"
+      }
+    }
+  },
+  "settings": {
+    "index": {
+      "number_of_shards": "1",
+      "number_of_replicas": "0"
+    }
+  }
+}

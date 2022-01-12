@@ -14,16 +14,13 @@ from .utils import Coordinates, rgetattr
 
 from typing import Optional, List, Dict
 
-
 DEFAULT_EXTENT = {
     'temporal': [[None, None]],
     'spatial': [[-180, -90, 180, 90]]
 }
 
 
-
 class Extent(InnerDoc):
-
     temporal = DateRange()
     spatial = GeoShape()
 
@@ -48,7 +45,8 @@ class ElasticsearchCollection(Document):
 
         """
         try:
-            summaries = getattr(self, 'summaries')
+            if summaries := getattr(self, 'summaries') is None:
+                return
         except AttributeError:
             return
 

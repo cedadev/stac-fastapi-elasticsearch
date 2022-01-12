@@ -9,16 +9,13 @@ __license__ = 'BSD - see LICENSE file in top-level package directory'
 __contact__ = 'richard.d.smith@stfc.ac.uk'
 
 import abc
-from typing import TypedDict, Dict, Any
+from typing import TypedDict
 import elasticsearch_dsl
 
 from stac_fastapi.types import stac as stac_types
 from stac_fastapi.types.links import CollectionLinks, ItemLinks
 
 from stac_fastapi.elasticsearch.models import database
-
-from dateutil import parser
-from urllib.parse import urlparse
 
 STAC_VERSION_DEFAULT = '1.0.0'
 
@@ -80,20 +77,10 @@ class ItemSerializer(Serializer):
     @classmethod
     def stac_to_db(
             cls,
-            stac_data: stac_types.Item,
+            stac_data: TypedDict,
             exclude_geometry=False
-    ) -> database.ElasticsearchItem:
-        db_item = database.ElasticsearchItem(
-            type='item',
-            id=stac_data.get('id'),
-            bbox=stac_data.get('bbox'),
-            collection_id=stac_data.get('collection'),
-            properties=stac_data.get('properties', {}),
-            stac_version=stac_data.get('stac_version'),
-            stac_extensions=stac_data.get('stac_extensions')
-        )
-        db_item.meta.id = stac_data.get('id')
-        return db_item
+    ) -> stac_types.Item:
+        ...
 
 
 class CollectionSerializer(Serializer):
@@ -128,64 +115,7 @@ class CollectionSerializer(Serializer):
     @classmethod
     def stac_to_db(
             cls,
-            stac_data: stac_types.Collection,
+            stac_data: TypedDict,
             exclude_geometry=False
     ) -> database.ElasticsearchCollection:
-        db_collection = database.ElasticsearchCollection(
-            id=stac_data.get('id'),
-            stac_extensions=stac_data.get('stac_extensions'),
-            stac_version=stac_data.get('stac_version'),
-            title=stac_data.get('title'),
-            description=stac_data.get('description'),
-            license=stac_data.get('license'),
-            summaries=stac_data.get('summaries'),
-            providers=stac_data.get('providers'),
-            assets=stac_data.get('assets'),
-            type='collection',
-            extent=cls.stac_to_db_extent(stac_data['extent']),
-            keywords=stac_data.get('keywords')
-        )
-        db_collection.meta.id = stac_data.get('id')
-        return db_collection
-
-    @staticmethod
-    def stac_to_db_extent(extent: Dict[str, Any]) -> Dict[str, Any]:
-        extent = extent
-        temporal = extent.get('temporal')
-        if temporal:
-            for k, d in temporal.items():
-                extent['temporal'][k] = parser.parse(d).isoformat()
-        return extent
-
-
-class AssetSerializer(Serializer):
-
-    @classmethod
-    def db_to_stac(
-            cls,
-            db_model: database.ElasticsearchAsset,
-            base_url: str
-
-    ) -> TypedDict:
-        pass
-
-    @classmethod
-    def stac_to_db(
-            cls,
-            stac_data: Dict,
-            id: str,
-            collection_id: str,
-            exclude_geometry: bool = False
-    ) -> elasticsearch_dsl.Document:
-        url = urlparse(stac_data.get('href'))
-
-        asset_db = database.ElasticsearchAsset(
-            categories=stac_data.get('roles'),
-            filename=stac_data.get('title'),
-            filepath_type_location=url.path,
-            magic_number=stac_data.get('type'),
-            media_type=stac_data.get('media_type', 'POSIX')
-        )
-        asset_db.meta.id = id
-        asset_db.collection_id = collection_id
-        return asset_db
+        ...

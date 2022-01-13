@@ -1,7 +1,7 @@
 from stac_fastapi.elasticsearch.models.serializers import (ItemSerializer,
                                                            CollectionSerializer,
                                                            AssetSerializer)
-from tests.stact_test_data import test_item, test_collection
+from tests.stac_test_data import test_item, test_collection
 from stac_fastapi.elasticsearch.models.database import (ElasticsearchCollection,
                                                         ElasticsearchItem,
                                                         ElasticsearchAsset)

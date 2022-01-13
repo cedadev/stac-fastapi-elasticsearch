@@ -24,7 +24,6 @@ from stac_fastapi.elasticsearch.models.serializers import (
     ItemSerializer,
     CollectionSerializer,
     AssetSerializer)
-from stac_fastapi.elasticsearch.models.prevalidation_types import ItemValidator, CollectionValidator
 
 
 class TransactionsClient(BaseTransactionsClient):
@@ -132,11 +131,6 @@ class TransactionsClient(BaseTransactionsClient):
         Returns:
             The collection that was created.
         """
-        try:
-            CollectionValidator(**collection)
-        except ValueError as error:
-            raise HTTPError(url=f"{request.url}",
-                            code=400, msg=error, hdrs=None, fp=None)
 
         # serialise collection, stac to db
         db_collection = CollectionSerializer.stac_to_db(collection)
@@ -157,12 +151,6 @@ class TransactionsClient(BaseTransactionsClient):
         """
         base_url = str(request.base_url)
         collection_id = str(request.path_params.get('collection_id'))
-
-        try:
-            CollectionValidator(**collection)
-        except ValueError as error:
-            raise HTTPError(url=f"{request.url}",
-                            code=400, msg=error, hdrs=None, fp=None)
 
         try:
             collection_db = ElasticsearchCollection.get(id=collection_id)

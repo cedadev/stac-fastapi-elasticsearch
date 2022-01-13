@@ -140,7 +140,7 @@ class CoreCrudClient(BaseCoreClient):
 
         if intersects := kwargs.get('intersects'):
             
-            qs = qs.filter('geo_shape', spatial__bbox={
+            qs = qs.filter('geo_shape', geometry={
                 'shape': {
                     'type': intersects.get('type'),
                     'coordinates': intersects.get('coordinates')
@@ -148,7 +148,7 @@ class CoreCrudClient(BaseCoreClient):
             })
         if bbox := kwargs.get('bbox'):
             
-            qs = qs.filter('geo_shape', spatial__bbox={
+            qs = qs.filter('geo_shape', bbox={
                 'shape': {
                     'type': 'envelope',
                     'coordinates': Coordinates.from_wgs84(bbox).to_geojson()
@@ -156,7 +156,7 @@ class CoreCrudClient(BaseCoreClient):
             })
         
         if datetime := kwargs.get('datetime'):
-            # based on datetime being provided in item, need to add functionality for if datetime=null and start_datetime and end_datetime are provided in the item
+            # currently based on datetime being provided in item
             # if a date range, get start and end datetimes and find any items with dates in this range
             # .. identifies an open date range
             # if one datetime, find any items with dates that this intersects
@@ -170,9 +170,14 @@ class CoreCrudClient(BaseCoreClient):
                 if end_date != '..':
                     qs = qs.filter('range', properties__datetime={'lte': end_date})
 
+                # add in option that searches start and end datetime if datetime is null in item
+
             else:
 
                 qs = qs.filter('match', properties__datetime=kwargs.get('datetime'))
+
+                # add in option for if item specifies start datetime and end datetime
+                # should return items which cover a range that the specified datetime falls in
                 
     
         if limit := kwargs.get('limit'):

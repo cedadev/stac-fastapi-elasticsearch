@@ -117,11 +117,25 @@ def test_datetime_non_interval(app_client):
 
 def test_search_point_intersects(app_client):
     """Check that items intersect with the given point.
-    As our test items don't contain a bounding bbox, this will return 0 results.
     """
 
     point = [150.04, -33.14]
     intersects = {"type": "Point", "coordinates": point}
+
+    params = {
+        "intersects": intersects,
+    }
+    resp = app_client.post("/search", json=params)
+    assert resp.status_code == 200
+    resp_json = resp.json()
+    print(resp_json)
+    assert len(resp_json["features"]) == 1
+
+
+def test_search_line_string_intersects(app_client):
+    """Test linestring intersect."""
+    line = [[150.04, -33.14], [150.22, -33.89]]
+    intersects = {"type": "LineString", "coordinates": line}
 
     params = {
         "intersects": intersects,
@@ -139,20 +153,6 @@ def test_bbox_3d(app_client):
         "bbox": australia_bbox,
     }
     
-    resp = app_client.post("/search", json=params)
-    assert resp.status_code == 200
-    resp_json = resp.json()
-    assert len(resp_json["features"]) == 1
-
-
-def test_search_line_string_intersects(app_client):
-    """Test linstring intersect. Test data doesn't have a bbox so will fail."""
-    line = [[150.04, -33.14], [150.22, -33.89]]
-    intersects = {"type": "LineString", "coordinates": line}
-
-    params = {
-        "intersects": intersects,
-    }
     resp = app_client.post("/search", json=params)
     assert resp.status_code == 200
     resp_json = resp.json()

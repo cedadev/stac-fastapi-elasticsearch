@@ -128,11 +128,12 @@ class ElasticsearchItem(Document):
         """
 
         try:
-            coordinates = rgetattr(self, 'spatial.bbox.coordinates')
+            coordinates = rgetattr(self, 'bbox')
         except AttributeError:
             return
 
-        return Coordinates.from_geojson(coordinates).to_wgs84()
+        return Coordinates.from_wgs84(coordinates).to_wgs84()
+        # return Coordinates.from_geojson(coordinates).to_wgs84()
 
     def get_collection_id(self) -> str:
         """

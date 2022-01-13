@@ -30,29 +30,17 @@ from stac_fastapi.elasticsearch.models.prevalidation_types import ItemValidator,
 class TransactionsClient(BaseTransactionsClient):
     """Defines a pattern for implementing the STAC transaction extension."""
 
-    def create_item(self, collection_id: str, item: stac_types.Item, request: Request) -> stac_types.Item:
+    def create_item(self, item: stac_types.Item, request: Request) -> stac_types.Item:
         """Create a new item.
-
         Called with `POST /collections/{collection_id}/items`.
-
         Args:
-            collection_id: ID of the collection to add item to.
             item: the item
-            request: starlette request object
-
         Returns:
             The item that was created.
-
         """
         base_url = str(request.base_url)
+        collection_id = str(request.path_params.get('collection_id'))
 
-        '''
-        try:
-            ItemValidator(**item)
-        except ValueError as error:
-            raise HTTPError(url=f"{request.url}",
-                            code=400, msg=error, hdrs=None, fp=None)
-        '''
         try:
             ElasticsearchCollection.get(id=collection_id)
         except NotFoundError:
@@ -66,31 +54,19 @@ class TransactionsClient(BaseTransactionsClient):
         item = ElasticsearchItem.get(id=db_item.meta.id)
         return ItemSerializer.db_to_stac(item, base_url=base_url)
 
-    def update_item(self, collection_id: str,
-                    item_id: str, item: stac_types.Item, request: Request
-                    ) -> stac_types.Item:
+    def update_item(self, item: stac_types.Item, request: Request) -> stac_types.Item:
         """Perform a complete update on an existing item.
-
-        Called with `PUT /collections/{collection_id}/items/{item_id}`. It is expected that this item already exists.
-        The update should do a diff against the saved item and perform any necessary updates.
-        Partial updates are not supported by the transactions extension.
-
+        Called with `PUT /collections/{collection_id}/items`. It is expected that this item already exists.  The update
+        should do a diff against the saved item and perform any necessary updates.  Partial updates are not supported
+        by the transactions extension.
         Args:
-            collection_id: the ID of the item's collection
-            item_id: the ID of the item
             item: the item (must be complete)
-            request: starlette request object
-
         Returns:
             The updated item.
         """
         base_url = str(request.base_url)
-
-        try:
-            ItemValidator(**item)
-        except ValueError as error:
-            raise HTTPError(url=f"{request.url}",
-                            code=400, msg=error, hdrs=None, fp=None)
+        collection_id = str(request.path_params.get('collection_id'))
+        item_id = str(request.path_params.get('item_id'))
 
         try:
             ElasticsearchCollection.get(id=collection_id)
@@ -119,14 +95,10 @@ class TransactionsClient(BaseTransactionsClient):
             self, item_id: str, collection_id: str, request: Request
     ) -> stac_types.Item:
         """Delete an item from a collection.
-
         Called with `DELETE /collections/{collection_id}/items/{item_id}`
-
         Args:
             item_id: id of the item.
             collection_id: id of the collection.
-            request: starlette request object.
-
         Returns:
             The deleted item.
         """
@@ -152,17 +124,11 @@ class TransactionsClient(BaseTransactionsClient):
 
         return item
 
-    def create_collection(
-            self, collection: stac_types.Collection, request: Request
-    ) -> stac_types.Collection:
+    def create_collection(self, collection: stac_types.Collection, request: Request) -> stac_types.Collection:
         """Create a new collection.
-
         Called with `POST /collections`.
-
         Args:
             collection: the collection
-            request: starlette request object
-
         Returns:
             The collection that was created.
         """
@@ -179,24 +145,18 @@ class TransactionsClient(BaseTransactionsClient):
         db_collection.save()
         return collection
 
-    def update_collection(
-            self, collection_id: str, collection: stac_types.Collection, request: Request,
-    ) -> stac_types.Collection:
+    def update_collection(self, collection: stac_types.Collection, request: Request) -> stac_types.Collection:
         """Perform a complete update on an existing collection.
-
-        Called with `PUT /collections/{collection_id}`. It is expected that this item already exists.
-        The update should do a diff against the saved collection and perform any necessary updates.
-        Partial updates are not supported by the transactions extension.
-
+        Called with `PUT /collections`. It is expected that this item already exists.  The update should do a diff
+        against the saved collection and perform any necessary updates.  Partial updates are not supported by the
+        transactions extension.
         Args:
-            collection_id: id of the collection
             collection: the collection (must be complete)
-            request: starlette request object
-
         Returns:
             The updated collection.
         """
         base_url = str(request.base_url)
+        collection_id = str(request.path_params.get('collection_id'))
 
         try:
             CollectionValidator(**collection)
@@ -223,13 +183,9 @@ class TransactionsClient(BaseTransactionsClient):
             self, collection_id: str, request: Request
     ) -> stac_types.Collection:
         """Delete a collection.
-
         Called with `DELETE /collections/{collection_id}`
-
         Args:
             collection_id: id of the collection.
-            request: starlette request object
-
         Returns:
             The deleted collection.
         """

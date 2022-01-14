@@ -8,13 +8,15 @@ __copyright__ = 'Copyright 2018 United Kingdom Research and Innovation'
 __license__ = 'BSD - see LICENSE file in top-level package directory'
 __contact__ = 'richard.d.smith@stfc.ac.uk'
 
+import pytest
+
 
 STAC_CORE_ROUTES = [
     "GET /",
     "GET /collections",
-    "GET /collections/{collectionId}",
-    "GET /collections/{collectionId}/items",
-    "GET /collections/{collectionId}/items/{itemId}",
+    "GET /collections/{collection_id}",
+    "GET /collections/{collection_id}/items",
+    "GET /collections/{collection_id}/items/{item_id}",
     "GET /conformance",
     "GET /search",
     "POST /search",
@@ -22,7 +24,7 @@ STAC_CORE_ROUTES = [
 
 FILTER_EXTENSION_ROUTES = [
     "GET /queryables",
-    "GET /collections/{collectionId}/queryables"
+    "GET /collections/{collection_id}/queryables"
 ]
 
 
@@ -32,6 +34,7 @@ def test_core_router(api_client):
     api_routes = set(
         [f"{list(route.methods)[0]} {route.path}" for route in api_client.app.routes]
     )
+    print(api_routes)
 
     assert not core_routes - api_routes
 
@@ -65,3 +68,38 @@ def test_app_context_extension(app_client):
 
     assert "context" in resp_json
     assert resp_json["context"]["returned"] ==  resp_json["context"]["matched"] == 2
+
+
+@pytest.mark.skip(reason="Skipping for now. Need to change the mapping on the indices to "
+                         "make collection_id and item_id keyword fields then update the "
+                         "filter to reflect this change. There is a mismatch between the "
+                         "test data and the production data, but the test data is how we want "
+                         "it to be.")
+def test_hierarchy(app_client):
+    """Check the hierarchy flow.
+
+        GET /
+        GET /collections
+        GET /collections/<collection_id>
+        GET /collections/<collection_id>/items
+        GET /collections/<collection_id>/items/<item_id>
+
+    """
+
+    resp = app_client.get("/")
+    assert resp.status_code == 200
+
+    resp = app_client.get("/collections")
+    assert resp.status_code == 200
+
+    collection_id = resp.json()['collections'][0]['id']
+    resp = app_client.get(f"/collections/{collection_id}")
+    assert resp.status_code == 200
+
+    resp = app_client.get(f"/collections/{collection_id}/items")
+    print(resp.json())
+    assert resp.status_code == 200
+
+    item_id = resp.json()['features'][0]['id']
+    resp = app_client.get(f"/collections/{collection_id}/items/{item_id}")
+    assert resp.status_code == 200

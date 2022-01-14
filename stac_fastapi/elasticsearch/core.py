@@ -163,7 +163,8 @@ class CoreCrudClient(BaseCoreClient):
                 )
             qs = qs.extra(size=limit)
 
-        if page := int(kwargs.get('page')):
+        if page := kwargs.get('page'):
+            page = int(page)
             qs = qs[(page - 1) * limit:page * limit]
 
         if self.extension_is_enabled('FilterExtension'):
@@ -255,7 +256,7 @@ class CoreCrudClient(BaseCoreClient):
 
         # Modify response with extensions
         if self.extension_is_enabled('ContextExtension'):
-            context = generate_context(limit, result_count, kwargs['page'])
+            context = generate_context(limit, result_count, kwargs.get('page', 1))
             item_collection['context'] = context
 
         if self.extension_is_enabled('ContextCollectionExtension'):
@@ -272,10 +273,10 @@ class CoreCrudClient(BaseCoreClient):
 
         return item_collection
 
-    def get_item(self, itemId: str, collectionId: str, **kwargs) -> stac_types.Item:
+    def get_item(self, item_id: str, collection_id: str, **kwargs) -> stac_types.Item:
         """Get item by id.
 
-        Called with `GET /collections/{collectionId}/items/{itemId}`.
+        Called with `GET /collections/{collection_id}/items/{item_id}`.
 
         Args:
             id: Id of the item.
@@ -284,20 +285,20 @@ class CoreCrudClient(BaseCoreClient):
             Item.
         """
         try:
-            item = self.item_table.get(id=itemId)
+            item = self.item_table.get(id=item_id)
         except NotFoundError:
             raise (
                 HTTPException(
                     status_code=404,
-                    detail=f'Item: {itemId} from collection: {collectionId} not found'
+                    detail=f'Item: {item_id} from collection: {collection_id} not found'
                 )
             )
 
-        if not getattr(item, 'collection_id', None) == collectionId:
+        if not getattr(item, 'collection_id', None) == collection_id:
             raise (
                 HTTPException(
                     status_code=404,
-                    detail=f'Item: {itemId} from collection: {collectionId} not found'
+                    detail=f'Item: {item_id} from collection: {collection_id} not found'
                 )
             )
 
@@ -357,10 +358,10 @@ class CoreCrudClient(BaseCoreClient):
             'links': links,
         }
 
-    def get_collection(self, collectionId: str, **kwargs) -> stac_types.Collection:
+    def get_collection(self, collection_id: str, **kwargs) -> stac_types.Collection:
         """Get collection by id.
 
-        Called with `GET /collections/{collectionId}`.
+        Called with `GET /collections/{collection_id}`.
 
         Args:
             id: Id of the collection.
@@ -369,9 +370,9 @@ class CoreCrudClient(BaseCoreClient):
             Collection.
         """
         try:
-            collection = self.collection_table.get(id=collectionId)
+            collection = self.collection_table.get(id=collection_id)
         except NotFoundError:
-            raise (NotFoundError(404, f'Collection: {collectionId} not found'))
+            raise (NotFoundError(404, f'Collection: {collection_id} not found'))
 
         base_url = str(kwargs['request'].base_url)
         collection.base_url = base_url
@@ -390,11 +391,11 @@ class CoreCrudClient(BaseCoreClient):
         return collection
 
     def item_collection(
-            self, collectionId: str, limit: int = 10, **kwargs
+            self, collection_id: str, limit: int = 10, **kwargs
     ) -> stac_types.ItemCollection:
         """Get all items from a specific collection.
 
-        Called with `GET /collections/{collectionId}/items`
+        Called with `GET /collections/{collection_id}/items`
 
         Args:
             id: id of the collection.
@@ -408,7 +409,7 @@ class CoreCrudClient(BaseCoreClient):
         page = int(query_params.get('page', '1'))
         limit = int(query_params.get('limit', '10'))
 
-        items = self.item_table.search().filter('term', collection_id__keyword=collectionId)
+        items = self.item_table.search().filter('term', collection_id__keyword=collection_id)
         result_count = items.count()
 
         items = items[(page - 1) * limit:page * limit]

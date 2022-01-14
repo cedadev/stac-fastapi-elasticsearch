@@ -17,3 +17,4 @@ base_dir = Path(__file__).resolve().parent
 
 # First, include the defaults
 include(base_dir / "defaults.py")
+include_dir(base_dir / 'settings.d')

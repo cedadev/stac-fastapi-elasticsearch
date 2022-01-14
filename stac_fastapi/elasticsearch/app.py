@@ -51,7 +51,9 @@ app = api.app
 
 
 def run():
-    """Run app from command line using uvicorn if available."""
+    """Run app from command line using uvicorn if available.
+    This has been built specifically for use with docker-compose.
+    """
     try:
         import uvicorn
 
@@ -60,7 +62,8 @@ def run():
             host=settings.APP_HOST,
             port=settings.APP_PORT,
             log_level="info",
-            reload=False,
+            reload_dirs=["/app/stac_fastapi", "/app/conf"],
+            reload=True,
         )
     except ImportError:
         raise RuntimeError("Uvicorn must be installed in order to use command")

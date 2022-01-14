@@ -38,7 +38,8 @@ populate with some data and start the application which will reload if you modif
    make run-sample-elasticsearch
    ```
 
-You can change the default settings by creating a file in `/conf/settings.d`.
+You can change the default settings by creating a file in `/conf/settings.d` and adding `include_dir(base_dir / 'settings.d')` 
+to `/conf/settings.py`
 Here you can set:
    - `ELASTICSEARCH_CONNECTION`
    - `COLLECTION_INDEX`

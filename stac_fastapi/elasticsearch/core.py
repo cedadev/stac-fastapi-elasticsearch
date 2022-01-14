@@ -163,7 +163,8 @@ class CoreCrudClient(BaseCoreClient):
                 )
             qs = qs.extra(size=limit)
 
-        if page := int(kwargs.get('page')):
+        if page := kwargs.get('page'):
+            page = int(page)
             qs = qs[(page - 1) * limit:page * limit]
 
         if self.extension_is_enabled('FilterExtension'):
@@ -255,7 +256,7 @@ class CoreCrudClient(BaseCoreClient):
 
         # Modify response with extensions
         if self.extension_is_enabled('ContextExtension'):
-            context = generate_context(limit, result_count, kwargs['page'])
+            context = generate_context(limit, result_count, kwargs.get('page', 1))
             item_collection['context'] = context
 
         if self.extension_is_enabled('ContextCollectionExtension'):

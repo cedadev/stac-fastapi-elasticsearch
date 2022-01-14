@@ -12,9 +12,9 @@ __contact__ = 'richard.d.smith@stfc.ac.uk'
 STAC_CORE_ROUTES = [
     "GET /",
     "GET /collections",
-    "GET /collections/{collectionId}",
-    "GET /collections/{collectionId}/items",
-    "GET /collections/{collectionId}/items/{itemId}",
+    "GET /collections/{collection_id}",
+    "GET /collections/{collection_id}/items",
+    "GET /collections/{collection_id}/items/{item_id}",
     "GET /conformance",
     "GET /search",
     "POST /search",
@@ -22,7 +22,7 @@ STAC_CORE_ROUTES = [
 
 FILTER_EXTENSION_ROUTES = [
     "GET /queryables",
-    "GET /collections/{collectionId}/queryables"
+    "GET /collections/{collection_id}/queryables"
 ]
 
 
@@ -32,6 +32,7 @@ def test_core_router(api_client):
     api_routes = set(
         [f"{list(route.methods)[0]} {route.path}" for route in api_client.app.routes]
     )
+    print(api_routes)
 
     assert not core_routes - api_routes
 

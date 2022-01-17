@@ -14,13 +14,15 @@ from stac_fastapi.extensions.core import (
     # FieldsExtension,
     # SortExtension,
     FilterExtension,
-    PaginationExtension
+    PaginationExtension,
+    TransactionExtension
 )
 
 
 from stac_fastapi.elasticsearch.session import Session
 from stac_fastapi.elasticsearch.core import CoreCrudClient
 from stac_fastapi.elasticsearch.filters import FiltersClient
+from stac_fastapi.elasticsearch.transactions import TransactionsClient
 from stac_fastapi.elasticsearch.config import settings
 
 
@@ -34,7 +36,8 @@ extensions = [
     FilterExtension(client=FiltersClient()),
     FreeTextExtension(),
     ContextCollectionExtension(),
-    PaginationExtension()
+    PaginationExtension(),
+    TransactionExtension(client=TransactionsClient(), settings=settings)
 ]
 
 session = Session.create_from_settings(settings)

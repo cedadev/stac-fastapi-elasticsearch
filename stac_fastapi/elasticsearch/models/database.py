@@ -52,7 +52,9 @@ class ElasticsearchCollection(Document):
         except AttributeError:
             return
 
-        return summaries.to_dict()
+        if summaries:
+            return summaries.to_dict()
+        return
 
     def get_extent(self) -> Dict:
         """

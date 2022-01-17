@@ -13,6 +13,9 @@
       "geometry": {
         "type": "geo_shape"
       },
+      "bbox": {
+        "type": "geo_shape"
+      },
       "datetime": {
         "type": "date"
       } 

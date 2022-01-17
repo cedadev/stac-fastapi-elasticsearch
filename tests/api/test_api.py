@@ -68,8 +68,34 @@ def test_app_context_extension(app_client):
 
 
 def test_search_for_collection(app_client):
-    pass
+    """Check searching for a collection"""
+    
+    # search for collection in items
+    params = {
+        "collections": ["Fj3reHsBhuk7QqVbt7P-"]
+    }
 
+    resp = app_client.post("/search", json=params)
+    resp_json = resp.json()
+    assert resp_json["context"]["returned"] == resp_json["context"]["matched"] == 2
+
+    # search for collection that doesn't exist
+    params = {
+        "collections": ["Fj3reHsriut7QqVb34f*"]
+    }
+
+    resp = app_client.post("/search", json=params)
+    resp_json = resp.json()
+    assert resp_json["context"]["returned"] == resp_json["context"]["matched"] == 0
+
+    # search for more than one collection
+    params = {
+        "collections": ["Fj3reHsriut7QqVb34f*", "Fj3reHsBhuk7QqVbt7P-"]
+    }
+
+    resp = app_client.post("/search", json=params)
+    resp_json = resp.json()
+    assert resp_json["context"]["returned"] == resp_json["context"]["matched"] == 2
 
 def test_search_date_interval(app_client):
     """Check searching with a date interval"""
@@ -128,7 +154,6 @@ def test_search_point_intersects(app_client):
     resp = app_client.post("/search", json=params)
     assert resp.status_code == 200
     resp_json = resp.json()
-    print(resp_json)
     assert len(resp_json["features"]) == 1
 
 
@@ -151,6 +176,19 @@ def test_bbox_3d(app_client):
     australia_bbox = [106.343365, -47.199523, 0.1, 168.218365, -19.437288, 0.1]
     params = {
         "bbox": australia_bbox,
+    }
+    
+    resp = app_client.post("/search", json=params)
+    assert resp.status_code == 200
+    resp_json = resp.json()
+    assert len(resp_json["features"]) == 1
+
+
+def test_bbox(app_client):
+    """Test bbox"""
+    bbox = [106.343365, -47.199523, 168.218365, -19.437288]
+    params = {
+        "bbox": bbox,
     }
     
     resp = app_client.post("/search", json=params)

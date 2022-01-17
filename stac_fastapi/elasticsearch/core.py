@@ -133,10 +133,10 @@ class CoreCrudClient(BaseCoreClient):
         qs = self.item_table.search()
 
         if collections := kwargs.get('collections'):
-            qs = qs.filter('terms', collection_id__keyword=collections)
+            qs = qs.filter('terms', collection_id=collections)
 
         if items := kwargs.get('ids'):
-            qs = qs.filter('terms', item_id__keyword=items)
+            qs = qs.filter('terms', item_id=items)
 
         if intersects := kwargs.get('intersects'):
             
@@ -146,6 +146,7 @@ class CoreCrudClient(BaseCoreClient):
                     'coordinates': intersects.get('coordinates')
                 }
             })
+
         if bbox := kwargs.get('bbox'):
             
             qs = qs.filter('geo_shape', bbox={
@@ -196,7 +197,7 @@ class CoreCrudClient(BaseCoreClient):
 
             field_mapping = {
                 'datetime': 'properties.datetime',
-                'bbox': 'spatial.bbox.coordinates'
+                'bbox': 'bbox.coordinates'
             }
 
             if qfilter := kwargs.get('filter'):
@@ -231,7 +232,7 @@ class CoreCrudClient(BaseCoreClient):
             if not collections:
                 qs.aggs.bucket('collections', 'terms', field='collection_id.keyword')
         
-        print(qs.to_dict())
+        # print(qs.to_dict())
         return qs
 
     def get_search(

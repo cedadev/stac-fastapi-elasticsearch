@@ -17,7 +17,7 @@ from stac_fastapi.extensions.core import (
     PaginationExtension
 )
 
-
+from stac_fastapi.api.models import create_get_request_model, create_post_request_model
 from stac_fastapi.elasticsearch.session import Session
 from stac_fastapi.elasticsearch.core import CoreCrudClient
 from stac_fastapi.elasticsearch.filters import FiltersClient
@@ -45,6 +45,8 @@ api = StacApi(
     pagination_extension=PaginationExtension,
     description=settings.STAC_DESCRIPTION,
     title=settings.STAC_TITLE,
+    search_get_request_model=create_get_request_model(extensions),
+    search_post_request_model=create_post_request_model(extensions)
 )
 
 app = api.app

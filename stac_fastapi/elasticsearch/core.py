@@ -171,13 +171,13 @@ class CoreCrudClient(BaseCoreClient):
                 if end_date != '..':
                     qs = qs.filter('range', properties__datetime={'lte': end_date})
 
-                # add in option that searches start and end datetime if datetime is null in item
+                # TODO: add in option that searches start and end datetime if datetime is null in item
 
             else:
 
                 qs = qs.filter('match', properties__datetime=kwargs.get('datetime'))
 
-                # add in option for if item specifies start datetime and end datetime
+                # TODO: add in option for if item specifies start datetime and end datetime instead of datetime
                 # should return items which cover a range that the specified datetime falls in
                 
     

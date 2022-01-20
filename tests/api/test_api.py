@@ -174,7 +174,7 @@ def test_search_line_string_intersects(app_client):
     assert len(resp_json["features"]) == 1
 
 
-@pytest.mark.skip(reason="Unsure if 3d bbox can be supported with elasticsearch.")
+@pytest.mark.skip(reason="3d bbox query not supported by elasticsearch.")
 def test_bbox_3d(app_client):
     """Test 3d bbox"""
     australia_bbox = [106.343365, -47.199523, 0.1, 168.218365, -19.437288, 0.1]

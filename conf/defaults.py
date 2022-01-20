@@ -24,3 +24,5 @@ STAC_TITLE='STAC API Elasticsearch'
 APP_HOST = os.environ.get('APP_HOST', '0.0.0.0')
 APP_PORT = int(os.environ.get('APP_PORT',8080))
 enable_response_models = True
+openapi_url = '/api'
+docs_url = '/docs'

@@ -66,18 +66,18 @@ class FiltersClient(BaseFiltersClient):
         return properties
 
     def get_queryables(
-            self, collectionId: Optional[str] = None, **kwargs
+            self, collection_id: Optional[str] = None, **kwargs
     ) -> Dict[str, Any]:
 
         schema = super().get_queryables()
 
-        if collectionId:
+        if collection_id:
 
-            properties = self.collection_summaries(collectionId)
+            properties = self.collection_summaries(collection_id)
 
-            schema['$id'] = f'{kwargs["request"].base_url}/{collectionId}/queryables'
-            schema['title'] = f'Queryables for {collectionId}'
-            schema['description'] = f'Queryable names and values for the {collectionId} collection'
+            schema['$id'] = f'{kwargs["request"].base_url}/{collection_id}/queryables'
+            schema['title'] = f'Queryables for {collection_id}'
+            schema['description'] = f'Queryable names and values for the {collection_id} collection'
             schema['properties'] = properties
 
         else:

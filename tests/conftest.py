@@ -19,7 +19,6 @@ from stac_fastapi.extensions.core import (
     SortExtension,
     FilterExtension,
     PaginationExtension
-
 )
 from stac_fastapi.elasticsearch.session import Session
 from stac_fastapi.elasticsearch.core import CoreCrudClient

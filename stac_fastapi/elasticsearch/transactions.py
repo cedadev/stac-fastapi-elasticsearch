@@ -70,7 +70,7 @@ class TransactionsClient(BaseTransactionsClient):
         request: Request = kwargs['request']
         base_url = str(request.base_url)
         collection_id = str(request.path_params.get('collection_id'))
-        item_id = str(request.path_params.get('item_id'))
+        item_id = str(item.get('id'))
 
         try:
             ElasticsearchCollection.get(id=collection_id)
@@ -157,7 +157,7 @@ class TransactionsClient(BaseTransactionsClient):
         """
         request: Request = kwargs['request']
         base_url = str(request.base_url)
-        collection_id = str(request.path_params.get('collection_id'))
+        collection_id = str(collection.get('id'))
 
         try:
             collection_db = ElasticsearchCollection.get(id=collection_id)

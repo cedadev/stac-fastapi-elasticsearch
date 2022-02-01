@@ -40,13 +40,13 @@ def test_get_collection(app_client):
 def test_create_new_collection(app_client):
     data = load_file("collections/cmip6/collections.json")
 
-    new_coll = data[0].copy()
+    new_coll = data[0].copy()["_source"]
     new_id = 'Fj3rerRFgu7QqVbt7P-'
-    new_coll["_id"] = new_id
+    new_coll["id"] = new_id
     resp_json = app_client.post(f"/collections", json=new_coll).json()
 
     # response appears to be correct
-    assert resp_json["_id"] == new_id
+    assert resp_json["id"] == new_id
 
     # get new collection
     coll = app_client.get(f"/collections/{new_id}").json()
@@ -54,8 +54,8 @@ def test_create_new_collection(app_client):
 
     # check a few keys
     assert resp_json.get("title") == "CMIP6"
-    assert resp_json.get("member") == ['r10i1p1f1', 'r1i1p1f1']
-    assert resp_json.get("version") == ['v20170706', 'v20180305', 'v20190528']
+    assert resp_json.get("summaries").get("member") == ['r10i1p1f1', 'r1i1p1f1']
+    assert resp_json.get("summaries").get("version") == ['v20170706', 'v20180305', 'v20190528']
 
 # creates new item with different '_id' at http://localhost:9200/stac-collections/_search and missing information - should raise a conflict error: 
 # see https://github.com/stac-utils/stac-fastapi/blob/master/stac_fastapi/sqlalchemy/tests/clients/test_postgres.py#L32-L40
@@ -69,15 +69,16 @@ def test_create_collection_already_exists(app_client):
 # can't find the collection? 
 # maybe change updating to a newly created collection once that is working, rather than editing the one from collections.json
 def test_update_collection(app_client):
-    data = load_file("collections/cmip6/collections.json")[0]
-    coll_id = "Fj3reHsBhuk7QqVbt7P-"
+    data = load_file("collections/cmip6/collections.json")[0]["_source"]
+    coll_id = "Fj3rerRFgu7QqVbt7P-"
 
     # check collection exists
     resp_json = app_client.get(f"/collections/{coll_id}").json()
     assert resp_json["id"] == coll_id
 
     # update with new keyword
-    data['_source']["keywords"].append("new keyword")
+    data["keywords"].append("new_keyword")
+    data['id'] = coll_id
     app_client.put(f"/collections", json=data)
 
     # check if collection has been updated
@@ -92,7 +93,7 @@ def test_get_collection_does_not_exist(app_client):
  
 
 def test_get_item(app_client):
-    coll_id = "Fj3reHsBhuk7QqVbt7P-"
+    coll_id = "Fj3rerRFgu7QqVbt7P-"
     item_id = "8c462277a5877d4adc00642e2a78af6e"
 
     resp = app_client.get(f"/collections/{coll_id}/items/{item_id}")
@@ -107,7 +108,7 @@ def test_get_item(app_client):
 
 
 def test_get_collection_items(app_client):
-    coll_id = "Fj3reHsBhuk7QqVbt7P-"
+    coll_id = "Fj3rerRFgu7QqVbt7P-"
     resp = app_client.get(f"/collections/{coll_id}/items")
     resp_json = resp.json()
 
@@ -120,12 +121,14 @@ def test_get_collection_items(app_client):
 # # cannot find newly created item
 def test_create_item(app_client):
     data = load_file("collections/cmip6/items.json")
-    coll_id = "Fj3reHsBhuk7QqVbt7P-"
+    coll_id = "Fj3rerRFgu7QqVbt7P-"
 
-    new_item = data[0].copy()
+    new_item = data[0].copy()["_source"]
     new_id = 'e7654b64ea5a3efe7a2c65433a798246'
-    new_item["_id"] = new_id
-    new_item["_source"]["item_id"] = new_id
+    new_item["id"] = new_id
+    new_item["collection"] = coll_id
+    new_item.pop("collection_id")
+    # new_item["item_id"] = new_id
 
     resp_json = app_client.post(f"/collections/{coll_id}/items", json=new_item).json()
     assert resp_json["id"] == new_id
@@ -140,13 +143,13 @@ def test_create_item(app_client):
     # check a few keys
     assert item.get('properties').get('mip_era') == 'CMIP6'
     assert item.get('properties').get('data_provider') == 'PANGEO'
-    assert item.get('properties').get('variable_id') == 'evspsbl'
+    assert item.get('properties').get('variable_id') == 'va'
 
 
 # doesn't raise conflict error
 def test_create_item_already_exists(app_client):
     data = load_file("collections/cmip6/items.json")[0]
-    coll_id = "Fj3reHsBhuk7QqVbt7P-"
+    coll_id = "Fj3rerRFgu7QqVbt7P-"
 
     with pytest.raises(ConflictError):
         resp_json = app_client.post(f"/collections/{coll_id}/items", json=data).json()
@@ -155,9 +158,12 @@ def test_create_item_already_exists(app_client):
 # maybe change updating to a newly created item once that is working, rather than editing one from items.json
 # cannot find the item to update
 def test_update_item(app_client):
-    data = load_file("collections/cmip6/items.json")[0]
-    coll_id = "Fj3reHsBhuk7QqVbt7P-"
-    item_id = "a3641b64ea5a3aba7a2c40663e798246"
+    data = load_file("collections/cmip6/items.json")[0]["_source"]
+    coll_id = "Fj3rerRFgu7QqVbt7P-"
+    item_id = "e7654b64ea5a3efe7a2c65433a798246"
+    data["collection"] = coll_id
+    data["id"] = item_id
+    data.pop("collection_id")
 
     # check items exists
     resp_json = app_client.get(f"/collections/{coll_id}/items/{item_id}").json()
@@ -165,18 +171,18 @@ def test_update_item(app_client):
     assert resp_json["collection"] == coll_id
 
     # update with new property
-    data["_source"]["properties"]["foo"] = "bar"
+    data["properties"]["foo"] = "bar"
     app_client.put(f"/collections/{coll_id}/items", json=data)
     
     # check if item has been updated
     resp_json = app_client.get(f"/collections/{coll_id}/items/{item_id}").json()
-    assert resp_json.get("keywords")
+    assert resp_json.get("properties").get("foo") == "bar"
 
 
 # change to newly created item rather than one from items.json
 # cannot find item but does not raise an exception, should it?
 def test_delete_item(app_client):
-    coll_id = "Fj3reHsBhuk7QqVbt7P-"
+    coll_id = "Fj3rerRFgu7QqVbt7P-"
     item_id = "8c462277a5877d4adc00642e2a78af6e"
 
     # check the item exists
@@ -195,7 +201,7 @@ def test_delete_item(app_client):
 # works but change to newly created collection rather than one from collections.json
 # last as i'm deleting the collection required for the other test at the moment
 def test_delete_collection(app_client):
-    coll_id = 'Fj3reHsBhuk7QqVbt7P-' # change this
+    coll_id = 'Fj3rerRFgu7QqVbt7P-' # change this
 
     # check the collection exists
     resp_json = app_client.get(f"/collections/{coll_id}").json()

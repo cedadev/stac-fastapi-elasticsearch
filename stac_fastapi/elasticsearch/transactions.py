@@ -55,7 +55,8 @@ class TransactionsClient(BaseTransactionsClient):
             for asset_id, asset in assets.items():
                 self.create_asset({asset_id: asset}, db_item.meta.id)
         item = ElasticsearchItem.get(id=db_item.meta.id)
-        return ItemSerializer.db_to_stac(item, base_url=base_url)
+        item = ItemSerializer.db_to_stac(item, base_url=base_url)
+        return item
 
     def update_item(self, item: stac_types.Item, **kwargs) -> stac_types.Item:
         """Perform a complete update on an existing item.
@@ -70,7 +71,7 @@ class TransactionsClient(BaseTransactionsClient):
         request: Request = kwargs['request']
         base_url = str(request.base_url)
         collection_id = str(request.path_params.get('collection_id'))
-        item_id = str(request.path_params.get('item_id'))
+        item_id = str(item.get('id'))
 
         try:
             ElasticsearchCollection.get(id=collection_id)
@@ -86,8 +87,8 @@ class TransactionsClient(BaseTransactionsClient):
             for asset_id, asset in old_item.get('assets').items():
                 self.delete_asset({asset_id: asset})
 
-        for asset_id, asset in item.get('assets').items():
-            self.create_asset({asset_id: asset}, item_db.meta.id)
+            for asset_id, asset in item.get('assets').items():
+                self.create_asset({asset_id: asset}, item_db.meta.id)
 
         item = ItemSerializer.stac_to_db(item)
         item_db.update(**item.to_dict())
@@ -157,7 +158,7 @@ class TransactionsClient(BaseTransactionsClient):
         """
         request: Request = kwargs['request']
         base_url = str(request.base_url)
-        collection_id = str(request.path_params.get('collection_id'))
+        collection_id = str(collection.get('id'))
 
         try:
             collection_db = ElasticsearchCollection.get(id=collection_id)

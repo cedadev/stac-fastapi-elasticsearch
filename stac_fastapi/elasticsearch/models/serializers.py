@@ -142,7 +142,7 @@ class CollectionSerializer(Serializer):
             providers=stac_data.get('providers'),
             assets=stac_data.get('assets'),
             type='collection',
-            extent=cls.stac_to_db_extent(stac_data.get('extent')), # wasn't working with current collections.json
+            extent=cls.stac_to_db_extent(stac_data.get('extent')),
             keywords=stac_data.get('keywords')
         )
         db_collection.meta.id = stac_data.get('id')

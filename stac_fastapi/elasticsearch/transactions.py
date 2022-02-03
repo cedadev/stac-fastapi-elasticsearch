@@ -15,6 +15,7 @@ from urllib.error import HTTPError
 import starlette.requests
 from elasticsearch import NotFoundError
 from fastapi import Request, HTTPException
+from stac_fastapi.types.errors import ConflictError
 from stac_fastapi.types import stac as stac_types
 from stac_fastapi.types.core import BaseTransactionsClient
 
@@ -43,11 +44,20 @@ class TransactionsClient(BaseTransactionsClient):
         request: Request = kwargs['request']
         base_url = str(request.base_url)
         collection_id = str(request.path_params.get('collection_id'))
+        item_id = str(item.get('id'))
 
         try:
             ElasticsearchCollection.get(id=collection_id)
         except NotFoundError:
             raise NotFoundError(404, f'Collection: {collection_id} not found')
+
+        try:
+            db_item = ElasticsearchItem.get(id=item_id)
+        except NotFoundError:
+            db_item = None
+        
+        if db_item:
+            raise ConflictError(f'Item already exists.')
 
         db_item = ItemSerializer.stac_to_db(item)
         db_item.save()
@@ -138,6 +148,16 @@ class TransactionsClient(BaseTransactionsClient):
         Returns:
             The collection that was created.
         """
+        collection_id = str(collection.get('id'))
+
+        try:
+            db_collection = ElasticsearchCollection.get(id=collection_id)
+        except NotFoundError:
+            db_collection = None
+        
+        if db_collection:
+            raise ConflictError('Collection already exists.')
+
 
         # serialise collection, stac to db
         db_collection = CollectionSerializer.stac_to_db(collection)

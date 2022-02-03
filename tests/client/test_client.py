@@ -32,11 +32,7 @@ def test_get_collection(app_client):
     assert resp_json.get("summaries").get("member") == ['r10i1p1f1', 'r1i1p1f1']
     assert resp_json.get("summaries").get("version") == ['v20170706', 'v20180305', 'v20190528']
 
-
-# creates new collection but with missing information  
-# maybe want to test all keys are present/correct?
-# at http://localhost:9200/stac-collections/_search '_id' doesn't match the new id, is that correct?     
-# can't find new collection on get                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               
 def test_create_new_collection(app_client):
     data = load_file("collections/cmip6/collections.json")
 
@@ -57,17 +53,15 @@ def test_create_new_collection(app_client):
     assert resp_json.get("summaries").get("member") == ['r10i1p1f1', 'r1i1p1f1']
     assert resp_json.get("summaries").get("version") == ['v20170706', 'v20180305', 'v20190528']
 
-# creates new item with different '_id' at http://localhost:9200/stac-collections/_search and missing information - should raise a conflict error: 
-# see https://github.com/stac-utils/stac-fastapi/blob/master/stac_fastapi/sqlalchemy/tests/clients/test_postgres.py#L32-L40
+
 def test_create_collection_already_exists(app_client):
     data = load_file("collections/cmip6/collections.json")[0]
+    data["id"] = 'Fj3reHsBhuk7QqVbt7P-'
 
-    with pytest.raises(ConflictError):
-        resp_json = app_client.post(f"/collections", json=data).json()
+    resp = app_client.post(f"/collections", json=data)
+    assert resp.status_code == 409
 
 
-# can't find the collection? 
-# maybe change updating to a newly created collection once that is working, rather than editing the one from collections.json
 def test_update_collection(app_client):
     data = load_file("collections/cmip6/collections.json")[0]["_source"]
     coll_id = "Fj3rerRFgu7QqVbt7P-"
@@ -93,7 +87,7 @@ def test_get_collection_does_not_exist(app_client):
  
 
 def test_get_item(app_client):
-    coll_id = "Fj3rerRFgu7QqVbt7P-"
+    coll_id = "Fj3reHsBhuk7QqVbt7P-"
     item_id = "8c462277a5877d4adc00642e2a78af6e"
 
     resp = app_client.get(f"/collections/{coll_id}/items/{item_id}")
@@ -108,7 +102,7 @@ def test_get_item(app_client):
 
 
 def test_get_collection_items(app_client):
-    coll_id = "Fj3rerRFgu7QqVbt7P-"
+    coll_id = "Fj3reHsBhuk7QqVbt7P-"
     resp = app_client.get(f"/collections/{coll_id}/items")
     resp_json = resp.json()
 
@@ -117,8 +111,7 @@ def test_get_collection_items(app_client):
     for item in resp_json['features']:
         assert item["collection"] == coll_id
 
-# create item but does not have information in elasticsearch index or response http://localhost:9200/stac-items/_search, has incorrect '_id' in index
-# # cannot find newly created item
+
 def test_create_item(app_client):
     data = load_file("collections/cmip6/items.json")
     coll_id = "Fj3rerRFgu7QqVbt7P-"
@@ -146,17 +139,15 @@ def test_create_item(app_client):
     assert item.get('properties').get('variable_id') == 'va'
 
 
-# doesn't raise conflict error
 def test_create_item_already_exists(app_client):
     data = load_file("collections/cmip6/items.json")[0]
-    coll_id = "Fj3rerRFgu7QqVbt7P-"
+    data["id"] = "a3641b64ea5a3aba7a2c40663e798246"
+    coll_id = "Fj3reHsBhuk7QqVbt7P-"
 
-    with pytest.raises(ConflictError):
-        resp_json = app_client.post(f"/collections/{coll_id}/items", json=data).json()
+    resp = app_client.post(f"/collections/{coll_id}/items", json=data)
+    assert resp.status_code == 409
 
 
-# maybe change updating to a newly created item once that is working, rather than editing one from items.json
-# cannot find the item to update
 def test_update_item(app_client):
     data = load_file("collections/cmip6/items.json")[0]["_source"]
     coll_id = "Fj3rerRFgu7QqVbt7P-"
@@ -179,11 +170,9 @@ def test_update_item(app_client):
     assert resp_json.get("properties").get("foo") == "bar"
 
 
-# change to newly created item rather than one from items.json
-# cannot find item but does not raise an exception, should it?
 def test_delete_item(app_client):
     coll_id = "Fj3rerRFgu7QqVbt7P-"
-    item_id = "8c462277a5877d4adc00642e2a78af6e"
+    item_id = "e7654b64ea5a3efe7a2c65433a798246"
 
     # check the item exists
     resp_json = app_client.get(f"/collections/{coll_id}/items/{item_id}").json()
@@ -192,14 +181,10 @@ def test_delete_item(app_client):
     # delete it
     app_client.delete(f"/collections/{coll_id}/items/{item_id}")
 
-    # try and get item again, should raise exception
-    with pytest.raises(NotFoundError):
-        app_client.get(f"/collections/{coll_id}/items/{item_id}").json()
+    resp = app_client.get(f"/collections/{coll_id}/items/{item_id}")
+    assert resp.status_code == 404
 
 
-
-# works but change to newly created collection rather than one from collections.json
-# last as i'm deleting the collection required for the other test at the moment
 def test_delete_collection(app_client):
     coll_id = 'Fj3rerRFgu7QqVbt7P-' # change this
 

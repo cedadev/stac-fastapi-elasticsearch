@@ -10,6 +10,22 @@ __contact__ = 'richard.d.smith@stfc.ac.uk'
 
 
 import collections
+# Python imports
+from string import Template
+
+# Package imports
+from stac_fastapi.elasticsearch.models.utils import Coordinates
+
+# CQL Filters imports
+from pygeofilter.parsers.cql_json import parse as parse_json
+from pygeofilter_elasticsearch import to_filter
+
+# Third-party imports
+from fastapi import HTTPException
+
+# Typing imports
+from elasticsearch_dsl.search import Search
+from elasticsearch_dsl.query import QueryString
 
 
 def dict_merge(*args, add_keys=True) -> dict:
@@ -48,3 +64,87 @@ def dict_merge(*args, add_keys=True) -> dict:
                 rtn_dct[k] = v
 
     return rtn_dct
+
+def get_queryset(client, table, **kwargs) -> Search:
+
+        # base_search = BaseSearch(**kwargs)
+
+        qs = table.search()
+
+        if asset_ids := kwargs.get('asset_ids'):
+            qs = qs.filter('terms', asset_id__keyword=asset_ids)
+
+        if item_ids := kwargs.get('item_ids'):
+            qs = qs.filter('terms', item_id__keyword=item_ids)
+    
+        if collection_ids := kwargs.get('collection_ids'):
+            qs = qs.filter('terms', collection_id__keyword=collection_ids)
+
+        if bbox := kwargs.get('bbox'):
+            qs = qs.filter('geo_shape', spatial__bbox={
+                'shape': {
+                    'type': 'envelope',
+                    'coordinates': Coordinates.from_wgs84(bbox).to_geojson()
+                }
+            })
+
+        if kwargs.get('datetime'):
+            if start_date := kwargs.get('start_date'):
+                qs = qs.filter('range', properties__datetime={'gte': start_date})
+
+            if end_date := kwargs.get('end_date'):
+                qs = qs.filter('range', properties__datetime={'lte': end_date})
+
+        if limit := kwargs.get('limit'):
+            if limit > 10000:
+                raise (
+                    HTTPException(
+                        status_code=424,
+                        detail="The number of results requested is outside the maximum window 10,000")
+                )
+            qs = qs.extra(size=limit)
+
+        if page := kwargs.get('page'):
+            page = int(page)
+            qs = qs[(page - 1) * limit:page * limit]
+
+        if client.extension_is_enabled('FilterExtension'):
+
+            field_mapping = {
+                'datetime': 'properties.datetime',
+                'bbox': 'spatial.bbox.coordinates'
+            }
+
+            if qfilter := kwargs.get('filter'):
+                ast = parse_json(qfilter)
+                try:
+                    qfilter = to_filter(
+                        ast,
+                        field_mapping,
+                        field_default=Template('properties__${name}__keyword')
+                    )
+                except NotImplementedError:
+                    raise (
+                        HTTPException(
+                            status_code=400,
+                            detail=f'Invalid filter expression'
+                        )
+                    )
+                else:
+                    qs = qs.query(qfilter)
+
+        if client.extension_is_enabled('FreeTextExtension'):
+            if q := kwargs.get('q'):
+                qs = qs.query(
+                    QueryString(
+                        query=q,
+                        default_field='properties.*',
+                        lenient=True
+                    )
+                )
+
+        if client.extension_is_enabled('ContextCollectionExtension'):
+            if not collection_ids:
+                qs.aggs.bucket('collections', 'terms', field='collection_id.keyword')
+
+        return qs

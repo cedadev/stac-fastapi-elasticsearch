@@ -111,6 +111,12 @@ class ElasticsearchItem(Document):
     def assets(self):
         return list(self.search_assets().scan())
 
+    @property
+    def meatadata_assets(self):
+        s = self.search_assets()
+        s = s.exclude('term', roles__keyword='data')
+        return list(s.scan())
+
     def get_stac_assets(self):
         return {asset.meta.id: asset.to_stac() for asset in self.assets}
 
@@ -148,6 +154,57 @@ class ElasticsearchItem(Document):
 
 
 class ElasticsearchAsset(Document):
+
+    type = 'Feature'
+
+    @classmethod
+    def search(cls, **kwargs):
+        s = super().search(**kwargs)
+        # s = s.exclude('term', categories__keyword='hidden')
+        # s = s.filter('exists', field='filepath_type_location')
+
+        return s
+
+    def get_properties(self) -> Dict:
+
+        try:
+            properties = getattr(self, 'properties')
+        except AttributeError:
+            return {}
+
+        return properties.to_dict()
+
+    def get_bbox(self):
+        """
+        Return a WGS84 formatted bbox
+
+        :return:
+        """
+
+        try:
+            coordinates = rgetattr(self, 'spatial.bbox.coordinates')
+        except AttributeError:
+            return
+
+        return Coordinates.from_geojson(coordinates).to_wgs84()
+
+    def get_item_id(self) -> str:
+        """
+        Return the item id
+        """
+        try:
+            return getattr(self, 'item_id')
+        except AttributeError:
+            return
+
+    def get_role(self) -> Optional[List]:
+
+        try:
+            roles = getattr(self, 'role')
+        except AttributeError:
+            return
+
+        return list(roles)
 
     def get_url(self) -> str:
         """

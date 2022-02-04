@@ -42,8 +42,8 @@ from fastapi import HTTPException
 
 # Typing imports
 from typing import Type, Dict, Optional, List, Union
-from elasticsearch_dsl.search import Search
-from elasticsearch_dsl.query import QueryString
+from .utils import get_queryset
+
 
 logger = logging.getLogger(__name__)
 
@@ -86,7 +86,10 @@ class CoreCrudClient(BaseCoreClient):
         """
         request_dict = search_request.dict()
 
-        items = self.get_queryset(**request_dict)
+        request_dict["item_ids"] = request_dict.pop("ids")
+        request_dict["collection_ids"] = request_dict.pop("collections")
+
+        items = self.get_queryset(self, **request_dict)
         result_count = items.count()
 
         response = []
@@ -94,8 +97,9 @@ class CoreCrudClient(BaseCoreClient):
 
         items = items.execute()
 
+        item_serializer = serializers.ItemAssetSearchSerializer if self.extension_is_enabled('AssetSearchExtension') else serializers.ItemSerializer
         for item in items:
-            response_item = serializers.ItemSerializer.db_to_stac(item, base_url)
+            response_item = item_serializer.db_to_stac(item, base_url)
             response.append(response_item)
 
         item_collection = stac_types.ItemCollection(
@@ -127,87 +131,6 @@ class CoreCrudClient(BaseCoreClient):
 
         return item_collection
 
-    def get_queryset(self, **kwargs) -> Search:
-
-        # base_search = BaseSearch(**kwargs)
-
-        qs = self.item_table.search()
-
-        if collections := kwargs.get('collections'):
-            qs = qs.filter('terms', collection_id__keyword=collections)
-
-        if items := kwargs.get('ids'):
-            qs = qs.filter('terms', item_id__keyword=items)
-
-        if bbox := kwargs.get('bbox'):
-            qs = qs.filter('geo_shape', spatial__bbox={
-                'shape': {
-                    'type': 'envelope',
-                    'coordinates': Coordinates.from_wgs84(bbox).to_geojson()
-                }
-            })
-
-        if kwargs.get('datetime'):
-            if start_date := kwargs.get('start_date'):
-                qs = qs.filter('range', properties__datetime={'gte': start_date})
-
-            if end_date := kwargs.get('end_date'):
-                qs = qs.filter('range', properties__datetime={'lte': end_date})
-
-        if limit := kwargs.get('limit'):
-            if limit > 10000:
-                raise (
-                    HTTPException(
-                        status_code=424,
-                        detail="The number of results requested is outside the maximum window 10,000")
-                )
-            qs = qs.extra(size=limit)
-
-        if page := kwargs.get('page'):
-            page = int(page)
-            qs = qs[(page - 1) * limit:page * limit]
-
-        if self.extension_is_enabled('FilterExtension'):
-
-            field_mapping = {
-                'datetime': 'properties.datetime',
-                'bbox': 'spatial.bbox.coordinates'
-            }
-
-            if qfilter := kwargs.get('filter'):
-                ast = parse_json(qfilter)
-                try:
-                    qfilter = to_filter(
-                        ast,
-                        field_mapping,
-                        field_default=Template('properties__${name}__keyword')
-                    )
-                except NotImplementedError:
-                    raise (
-                        HTTPException(
-                            status_code=400,
-                            detail=f'Invalid filter expression'
-                        )
-                    )
-                else:
-                    qs = qs.query(qfilter)
-
-        if self.extension_is_enabled('FreeTextExtension'):
-            if q := kwargs.get('q'):
-                qs = qs.query(
-                    QueryString(
-                        query=q,
-                        default_field='properties.*',
-                        lenient=True
-                    )
-                )
-
-        if self.extension_is_enabled('ContextCollectionExtension'):
-            if not collections:
-                qs.aggs.bucket('collections', 'terms', field='collection_id.keyword')
-
-        return qs
-
     def get_search(
             self,
             collections: Optional[List[str]] = None,
@@ -224,25 +147,30 @@ class CoreCrudClient(BaseCoreClient):
         Returns:
             ItemCollection containing items which match the search criteria.
         """
+
         search = {
-            'collections': collections,
-            'ids': ids,
+            'collection_ids': collections,
+            'item_ids': ids,
             'bbox': bbox,
             'datetime': datetime,
             'limit': limit,
             **kwargs
         }
 
-        items = self.get_queryset(**search)
+        items = get_queryset(self, self.item_table, **search)
         result_count = items.count()
 
         response = []
         base_url = str(kwargs['request'].base_url)
 
         items = items.execute()
+        # hits = items.hits.hits
+
+        item_serializer = serializers.ItemAssetSearchSerializer if self.extension_is_enabled('AssetSearchExtension') else serializers.ItemSerializer
 
         for item in items:
-            response_item = serializers.ItemSerializer.db_to_stac(item, base_url)
+            # item = database.ElasticsearchItem.from_es(hit.to_dict())
+            response_item = item_serializer.db_to_stac(item, base_url)
             response.append(response_item)
 
         links = generate_pagination_links(kwargs['request'], result_count, limit)
@@ -304,7 +232,9 @@ class CoreCrudClient(BaseCoreClient):
 
         base_url = str(kwargs['request'].base_url)
 
-        return serializers.ItemSerializer.db_to_stac(item, base_url)
+        item_serializer = serializers.ItemAssetSearchSerializer if self.extension_is_enabled('AssetSearchExtension') else serializers.ItemSerializer
+
+        return item_serializer.db_to_stac(item, base_url)
 
     def all_collections(self, **kwargs) -> Dict:
         """Get all available collections.

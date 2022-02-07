@@ -13,6 +13,7 @@ from elasticsearch_dsl import DateRange, GeoShape
 from .utils import Coordinates, rgetattr
 
 from typing import Optional, List, Dict
+from fnmatch import fnmatch
 
 
 DEFAULT_EXTENT = {
@@ -41,6 +42,12 @@ class ElasticsearchCollection(Document):
         s = s.filter('term', type='collection')
 
         return s
+    
+    @classmethod
+    def _matches(cls, hit):
+        # override _matches to match indices in a pattern instead of just ALIAS
+        # hit is the raw dict as returned by elasticsearch
+        return fnmatch(hit["_index"], cls._index._name + "*")
 
     def get_summaries(self) -> Optional[Dict]:
         """
@@ -99,6 +106,12 @@ class ElasticsearchItem(Document):
         s = s.filter('term', type='item')
 
         return s
+    
+    @classmethod
+    def _matches(cls, hit):
+        # override _matches to match indices in a pattern instead of just ALIAS
+        # hit is the raw dict as returned by elasticsearch
+        return fnmatch(hit["_index"], cls._index._name + "*")
 
     def search_assets(self):
         s = ElasticsearchAsset.search()
@@ -164,6 +177,11 @@ class ElasticsearchAsset(Document):
         # s = s.filter('exists', field='filepath_type_location')
 
         return s
+    
+    @classmethod
+    def _matches(cls, hit):
+        # override _matches to match indices in a pattern instead of just ALIAS
+        return fnmatch(hit["_index"], cls._index._name + "*")
 
     def get_properties(self) -> Dict:
 

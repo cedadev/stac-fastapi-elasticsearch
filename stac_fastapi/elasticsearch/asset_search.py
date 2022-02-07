@@ -126,10 +126,8 @@ class AssetSearchClient(BaseAssetSearchClient):
         base_url = str(kwargs['request'].base_url)
 
         assets = assets.execute()
-        # hits = assets.hits.hits
 
         for asset in assets:
-            # asset = ElasticsearchAsset.from_es(hit.to_dict())
             response_asset = serializers.AssetSerializer.db_to_stac(asset, base_url, collection)
             response.append(response_asset)
 
@@ -148,3 +146,19 @@ class AssetSearchClient(BaseAssetSearchClient):
             asset_collection['context'] = context
 
         return asset_collection
+
+
+    def get_assets(self, item_id: str = None, collection_id: str = None, **kwargs) -> AssetCollection:
+        """Get item assets (GET).
+
+        Called with `GET /collection/{collection_id}/items/{item_id}/assets`.
+
+        Returns:
+            AssetCollection containing the item's assets.
+        """
+        
+        return self.get_asset_search(
+            items = [item_id],
+            collection = collection_id,
+            **kwargs
+        )

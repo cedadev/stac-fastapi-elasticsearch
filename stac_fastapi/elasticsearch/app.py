@@ -43,6 +43,7 @@ extensions = [
     TransactionExtension(client=TransactionsClient(), settings=settings),
 ]
 
+# Adding the asset search extension seperately as it uses the other extensions
 extensions.append(AssetSearchExtension(client=AssetSearchClient(extensions=extensions), settings=settings))
 
 session = Session.create_from_settings(settings)

@@ -164,12 +164,9 @@ class CoreCrudClient(BaseCoreClient):
         base_url = str(kwargs['request'].base_url)
 
         items = items.execute()
-        # hits = items.hits.hits
 
         item_serializer = serializers.ItemAssetSearchSerializer if self.extension_is_enabled('AssetSearchExtension') else serializers.ItemSerializer
-
         for item in items:
-            # item = database.ElasticsearchItem.from_es(hit.to_dict())
             response_item = item_serializer.db_to_stac(item, base_url)
             response.append(response_item)
 

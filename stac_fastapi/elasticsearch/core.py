@@ -89,7 +89,7 @@ class CoreCrudClient(BaseCoreClient):
         request_dict["item_ids"] = request_dict.pop("ids")
         request_dict["collection_ids"] = request_dict.pop("collections")
 
-        items = self.get_queryset(self, **request_dict)
+        items = self.get_queryset(**request_dict)
         result_count = items.count()
 
         response = []
@@ -114,7 +114,7 @@ class CoreCrudClient(BaseCoreClient):
             context = generate_context(
                 search_request.limit,
                 result_count,
-                int(getattr(search_request, 'page'))
+                int(getattr(search_request, 'page', 1))
             )
             item_collection['context'] = context
 
@@ -336,7 +336,7 @@ class CoreCrudClient(BaseCoreClient):
         page = int(query_params.get('page', '1'))
         limit = int(query_params.get('limit', '10'))
 
-        items = self.item_table.search().filter('term', collection_id__keyword=collection_id)
+        items = self.item_table.search().filter('term', collection_id=collection_id)
         result_count = items.count()
 
         items = items[(page - 1) * limit:page * limit]

@@ -107,9 +107,8 @@ class ItemAssetSearchSerializer(ItemSerializer):
                    ) -> stac_types.Item:
         item = super().db_to_stac(db_model, base_url)
 
-        # remove assets from item
-        del item["assets"]
-        # add meta_asset link to item
+        # update assets to meta assets
+        item["assets"] = db_model.meatadata_assets
         # add asset link to item.links
         asset_link = dict(
             rel="assets",
@@ -180,39 +179,6 @@ class CollectionSerializer(Serializer):
             for k, d in temporal.items():
                 extent['temporal'][k] = parser.parse(d).isoformat()
         return extent
-
-
-# class AssetSerializer(Serializer):
-
-#     @classmethod
-#     def db_to_stac(
-#             cls,
-#             db_model: database.ElasticsearchAsset,
-#             base_url: str
-
-#     ) -> TypedDict:
-#         pass
-
-#     @classmethod
-#     def stac_to_db(
-#             cls,
-#             stac_data: Dict,
-#             id: str,
-#             collection_id: str,
-#             exclude_geometry: bool = False
-#     ) -> elasticsearch_dsl.Document:
-#         url = urlparse(stac_data.get('href'))
-
-#         asset_db = database.ElasticsearchAsset(
-#             categories=stac_data.get('roles'),
-#             filename=stac_data.get('title'),
-#             filepath_type_location=url.path,
-#             magic_number=stac_data.get('type'),
-#             media_type=stac_data.get('media_type', 'POSIX')
-#         )
-#         asset_db.meta.id = id
-#         asset_db.collection_id = collection_id
-#         return asset_db
 
 
 class AssetSerializer(Serializer):

@@ -85,7 +85,7 @@ class CoreCrudClient(BaseCoreClient):
             ItemCollection containing items which match the search criteria.
         """
         request_dict = search_request.dict()
-
+        
         items = self.get_queryset(**request_dict)
         result_count = items.count()
 
@@ -110,7 +110,7 @@ class CoreCrudClient(BaseCoreClient):
             context = generate_context(
                 search_request.limit,
                 result_count,
-                int(getattr(search_request, 'page'))
+                int(getattr(search_request, 'page', 1))
             )
             item_collection['context'] = context
 
@@ -130,30 +130,57 @@ class CoreCrudClient(BaseCoreClient):
     def get_queryset(self, **kwargs) -> Search:
 
         # base_search = BaseSearch(**kwargs)
-
         qs = self.item_table.search()
 
         if collections := kwargs.get('collections'):
-            qs = qs.filter('terms', collection_id__keyword=collections)
+            qs = qs.filter('terms', collection_id=collections)
 
         if items := kwargs.get('ids'):
-            qs = qs.filter('terms', item_id__keyword=items)
+            qs = qs.filter('terms', item_id=items)
+
+        if intersects := kwargs.get('intersects'):
+            
+            qs = qs.filter('geo_shape', geometry={
+                'shape': {
+                    'type': intersects.get('type'),
+                    'coordinates': intersects.get('coordinates')
+                }
+            })
 
         if bbox := kwargs.get('bbox'):
-            qs = qs.filter('geo_shape', spatial__bbox={
+            
+            qs = qs.filter('geo_shape', bbox={
                 'shape': {
                     'type': 'envelope',
                     'coordinates': Coordinates.from_wgs84(bbox).to_geojson()
                 }
             })
+        
+        if datetime := kwargs.get('datetime'):
+            # currently based on datetime being provided in item
+            # if a date range, get start and end datetimes and find any items with dates in this range
+            # .. identifies an open date range
+            # if one datetime, find any items with dates that this intersects
+            if "/" in datetime:
+                start_date = datetime.split('/')[0]
+                end_date = datetime.split('/')[1]
 
-        if kwargs.get('datetime'):
-            if start_date := kwargs.get('start_date'):
-                qs = qs.filter('range', properties__datetime={'gte': start_date})
+                if start_date != '..':
+                    qs = qs.filter('range', properties__datetime={'gte': start_date})
 
-            if end_date := kwargs.get('end_date'):
-                qs = qs.filter('range', properties__datetime={'lte': end_date})
+                if end_date != '..':
+                    qs = qs.filter('range', properties__datetime={'lte': end_date})
 
+                # TODO: add in option that searches start and end datetime if datetime is null in item
+
+            else:
+
+                qs = qs.filter('match', properties__datetime=kwargs.get('datetime'))
+
+                # TODO: add in option for if item specifies start datetime and end datetime instead of datetime
+                # should return items which cover a range that the specified datetime falls in
+                
+    
         if limit := kwargs.get('limit'):
             if limit > 10000:
                 raise (
@@ -171,7 +198,7 @@ class CoreCrudClient(BaseCoreClient):
 
             field_mapping = {
                 'datetime': 'properties.datetime',
-                'bbox': 'spatial.bbox.coordinates'
+                'bbox': 'bbox.coordinates'
             }
 
             if qfilter := kwargs.get('filter'):
@@ -205,7 +232,7 @@ class CoreCrudClient(BaseCoreClient):
         if self.extension_is_enabled('ContextCollectionExtension'):
             if not collections:
                 qs.aggs.bucket('collections', 'terms', field='collection_id.keyword')
-
+        
         return qs
 
     def get_search(
@@ -409,7 +436,7 @@ class CoreCrudClient(BaseCoreClient):
         page = int(query_params.get('page', '1'))
         limit = int(query_params.get('limit', '10'))
 
-        items = self.item_table.search().filter('term', collection_id__keyword=collection_id)
+        items = self.item_table.search().filter('term', collection_id=collection_id)
         result_count = items.count()
 
         items = items[(page - 1) * limit:page * limit]

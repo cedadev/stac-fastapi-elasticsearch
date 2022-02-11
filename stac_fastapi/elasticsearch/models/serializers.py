@@ -109,7 +109,7 @@ class CollectionSerializer(Serializer):
         ).create_links()
 
         stac_extensions = getattr(db_model, 'stac_extensions', [])
-
+        
         return stac_types.Collection(
             type='Collection',
             id=db_model.meta.id,
@@ -142,7 +142,7 @@ class CollectionSerializer(Serializer):
             providers=stac_data.get('providers'),
             assets=stac_data.get('assets'),
             type='collection',
-            extent=cls.stac_to_db_extent(stac_data['extent']),
+            extent=cls.stac_to_db_extent(stac_data.get('extent')),
             keywords=stac_data.get('keywords')
         )
         db_collection.meta.id = stac_data.get('id')

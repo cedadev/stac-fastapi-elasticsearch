@@ -9,7 +9,6 @@ __license__ = 'BSD - see LICENSE file in top-level package directory'
 __contact__ = 'richard.d.smith@stfc.ac.uk'
 
 
-import collections
 # Python imports
 from string import Template
 
@@ -72,29 +71,57 @@ def get_queryset(client, table, **kwargs) -> Search:
         qs = table.search()
 
         if asset_ids := kwargs.get('asset_ids'):
-            qs = qs.filter('terms', asset_id__keyword=asset_ids)
+            qs = qs.filter('terms', asset_id=asset_ids)
 
         if item_ids := kwargs.get('item_ids'):
-            qs = qs.filter('terms', item_id__keyword=item_ids)
-    
-        if collection_ids := kwargs.get('collection_ids'):
-            qs = qs.filter('terms', collection_id__keyword=collection_ids)
+            qs = qs.filter('terms', item_id=item_ids)
+
+        if collection_ids := kwargs.get('collections'):
+            qs = qs.filter('terms', collection_id=collection_ids)
+
+        if intersects := kwargs.get('intersects'):
+            
+            qs = qs.filter('geo_shape', geometry={
+                'shape': {
+                    'type': intersects.get('type'),
+                    'coordinates': intersects.get('coordinates')
+                }
+            })
 
         if bbox := kwargs.get('bbox'):
-            qs = qs.filter('geo_shape', spatial__bbox={
+            
+            qs = qs.filter('geo_shape', bbox={
                 'shape': {
                     'type': 'envelope',
                     'coordinates': Coordinates.from_wgs84(bbox).to_geojson()
                 }
             })
+        
+        if datetime := kwargs.get('datetime'):
+            # currently based on datetime being provided in item
+            # if a date range, get start and end datetimes and find any items with dates in this range
+            # .. identifies an open date range
+            # if one datetime, find any items with dates that this intersects
+            if "/" in datetime:
+                start_date = datetime.split('/')[0]
+                end_date = datetime.split('/')[1]
 
-        if kwargs.get('datetime'):
-            if start_date := kwargs.get('start_date'):
-                qs = qs.filter('range', properties__datetime={'gte': start_date})
+                if start_date != '..':
+                    qs = qs.filter('range', properties__datetime={'gte': start_date})
 
-            if end_date := kwargs.get('end_date'):
-                qs = qs.filter('range', properties__datetime={'lte': end_date})
+                if end_date != '..':
+                    qs = qs.filter('range', properties__datetime={'lte': end_date})
 
+                # TODO: add in option that searches start and end datetime if datetime is null in item
+
+            else:
+
+                qs = qs.filter('match', properties__datetime=kwargs.get('datetime'))
+
+                # TODO: add in option for if item specifies start datetime and end datetime instead of datetime
+                # should return items which cover a range that the specified datetime falls in
+                
+    
         if limit := kwargs.get('limit'):
             if limit > 10000:
                 raise (
@@ -112,7 +139,7 @@ def get_queryset(client, table, **kwargs) -> Search:
 
             field_mapping = {
                 'datetime': 'properties.datetime',
-                'bbox': 'spatial.bbox.coordinates'
+                'bbox': 'bbox.coordinates'
             }
 
             if qfilter := kwargs.get('filter'):
@@ -145,6 +172,6 @@ def get_queryset(client, table, **kwargs) -> Search:
 
         if client.extension_is_enabled('ContextCollectionExtension'):
             if not collection_ids:
-                qs.aggs.bucket('collections', 'terms', field='collection_id.keyword')
-
+                qs.aggs.bucket('collections', 'terms', field='collection_id')
+        
         return qs

@@ -111,6 +111,7 @@ def test_search_date_interval(app_client):
     assert resp.status_code == 200
     resp_json = resp.json()
     assert resp_json["context"]["returned"] == resp_json["context"]["matched"] == 1
+    print(resp_json)
     assert resp_json["features"][0]["properties"]["datetime"] == "2014-04-09T00:00:00Z"
 
 

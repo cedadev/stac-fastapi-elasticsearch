@@ -89,7 +89,7 @@ class CoreCrudClient(BaseCoreClient):
         request_dict["item_ids"] = request_dict.pop("ids")
         request_dict["collection_ids"] = request_dict.pop("collections")
 
-        items = self.get_queryset(**request_dict)
+        items = get_queryset(self, self.item_table, **request_dict)
         result_count = items.count()
 
         response = []

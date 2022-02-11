@@ -217,7 +217,7 @@ class TransactionsClient(BaseTransactionsClient):
 
         # remove collection from elasticsearch index
         items = ElasticsearchItem.search()
-        items = items.filter("term", collection_id__keyword=collection_db.meta.id)
+        items = items.filter("term", collection_id=collection_db.meta.id)
 
         for item in items:
             self.delete_item(item.meta.id, collection_id, request)

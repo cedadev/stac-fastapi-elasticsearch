@@ -182,7 +182,7 @@ class AssetSerializer(Serializer):
         asset_db = database.ElasticsearchAsset(
             categories=stac_data.get('roles'),
             filename=stac_data.get('title'),
-            filepath_type_location=url.path,
+            location=url.path,
             magic_number=stac_data.get('type'),
             media_type=stac_data.get('media_type', 'POSIX')
         )

@@ -130,13 +130,16 @@ class ElasticsearchItem(Document):
         return list(self.search_assets().scan())
 
     @property
-    def meatadata_assets(self):
+    def metadata_assets(self):
         s = self.search_assets()
-        s = s.exclude('term', roles__keyword='data')
+        s = s.exclude('term', categories='data')
         return list(s.scan())
 
     def get_stac_assets(self):
         return {asset.meta.id: asset.to_stac() for asset in self.assets}
+
+    def get_stac_metadata_assets(self):
+        return {asset.meta.id: asset.to_stac() for asset in self.metadata_assets}
 
     def get_properties(self) -> Dict:
 
@@ -223,7 +226,7 @@ class ElasticsearchAsset(Document):
     def get_role(self) -> Optional[List]:
 
         try:
-            roles = getattr(self, 'role')
+            roles = getattr(self, 'categories')
         except AttributeError:
             return
 

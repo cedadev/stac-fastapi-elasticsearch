@@ -38,7 +38,7 @@ class ElasticsearchCollection(Document):
     @classmethod
     def search(cls, **kwargs):
         s = super().search(**kwargs)
-        s = s.filter('term', type='collection') 
+        s = s.filter('term', type='collection')
         return s
 
     def get_summaries(self) -> Optional[Dict]:
@@ -66,14 +66,20 @@ class ElasticsearchCollection(Document):
         except AttributeError:
             return DEFAULT_EXTENT
 
-        # Throw away inclusivity flag with _
-        lower, _ = extent.temporal.lower
-        upper, _ = extent.temporal.upper
+        try:
+            # Throw away inclusivity flag with _
+            lower, _ = extent.temporal.lower
+            upper, _ = extent.temporal.upper
 
-        lower = lower.isoformat() if lower else None
-        upper = upper.isoformat() if upper else None
+            lower = lower.isoformat() if lower else None
+            upper = upper.isoformat() if upper else None
+        except AttributeError:
+            lower, upper = None, None
 
-        coordinates = Coordinates.from_geojson(extent.spatial.coordinates)
+        try:
+            coordinates = Coordinates.from_geojson(extent.spatial.coordinates)
+        except AttributeError:
+            coordinates = Coordinates.from_wgs84(DEFAULT_EXTENT['spatial'][0])
 
         return dict(
             temporal=dict(interval=[[lower, upper]]),
@@ -101,9 +107,9 @@ class ElasticsearchItem(Document):
 
     def search_assets(self):
         s = ElasticsearchAsset.search()
-        s = s.filter('term', collection_id=self.meta.id)
-        s = s.exclude('term', categories__keyword='hidden')
-        s = s.filter('exists', field='filepath_type_location')
+        s = s.filter('term', item_id=self.meta.id)
+        s = s.exclude('term', categories='hidden')
+        s = s.filter('exists', field='location')
         return s
 
     @property
@@ -153,7 +159,7 @@ class ElasticsearchAsset(Document):
         Convert the path into a url where you can access the asset
         """
         if getattr(self, 'media_type','POSIX'):
-            return f'https://dap.ceda.ac.uk{self.filepath_type_location}'
+            return f'https://dap.ceda.ac.uk{self.location}'
 
     def get_roles(self) -> Optional[List]:
 

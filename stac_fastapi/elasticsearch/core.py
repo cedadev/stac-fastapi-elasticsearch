@@ -231,7 +231,7 @@ class CoreCrudClient(BaseCoreClient):
 
         if self.extension_is_enabled('ContextCollectionExtension'):
             if not collections:
-                qs.aggs.bucket('collections', 'terms', field='collection_id.keyword')
+                qs.aggs.bucket('collections', 'terms', field='collection_id')
         
         return qs
 

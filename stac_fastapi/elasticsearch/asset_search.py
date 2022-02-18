@@ -9,19 +9,15 @@ __license__ = 'BSD - see LICENSE file in top-level package directory'
 __contact__ = 'rhys.r.evans@stfc.ac.uk'
 
 # Python imports
-import collections
 from datetime import datetime
 import logging
-from string import Template
 
 # Package imports
 from stac_fastapi.elasticsearch.models.database import ElasticsearchAsset
-from stac_fastapi.elasticsearch.session import Session
-from stac_fastapi.elasticsearch.models import database
 from stac_fastapi.elasticsearch.models import serializers
-from stac_fastapi.elasticsearch.models.utils import Coordinates
 from stac_fastapi.elasticsearch.pagination import generate_pagination_links
 from stac_fastapi.elasticsearch.context import generate_context
+from .utils import get_queryset
 
 # Stac FastAPI imports
 
@@ -31,8 +27,6 @@ from stac_fastapi_asset_search.types import AssetCollection, AssetSearchPostRequ
 
 # Third-party imports
 import attr
-
-from .utils import get_queryset
 
 # Typing imports
 from typing import Type, Optional, List, Union
@@ -45,7 +39,7 @@ NumType = Union[float, int]
 @attr.s
 class AssetSearchClient(BaseAssetSearchClient):
 
-    asset_table: Type[database.ElasticsearchAsset] = attr.ib(default=database.ElasticsearchAsset)
+    asset_table: Type[ElasticsearchAsset] = attr.ib(default=ElasticsearchAsset)
 
     def post_asset_search(self, search_request: Type[AssetSearchPostRequest], **kwargs) -> AssetCollection:
         """Cross catalog asset search (POST).

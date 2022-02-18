@@ -108,7 +108,7 @@ class ItemAssetSearchSerializer(ItemSerializer):
         item = super().db_to_stac(db_model, base_url)
 
         # update assets to meta assets
-        item["assets"] = db_model.meatadata_assets
+        item["assets"] = db_model.get_stac_metadata_assets()
         # add asset link to item.links
         asset_link = dict(
             rel="assets",

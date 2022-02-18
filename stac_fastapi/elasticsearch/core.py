@@ -11,13 +11,11 @@ __contact__ = 'richard.d.smith@stfc.ac.uk'
 # Python imports
 from datetime import datetime
 import logging
-from string import Template
 
 # Package imports
 from stac_fastapi.elasticsearch.session import Session
 from stac_fastapi.elasticsearch.models import database
 from stac_fastapi.elasticsearch.models import serializers
-from stac_fastapi.elasticsearch.models.utils import Coordinates
 from stac_fastapi.elasticsearch.pagination import generate_pagination_links
 from stac_fastapi.elasticsearch.context import generate_context
 
@@ -86,6 +84,7 @@ class CoreCrudClient(BaseCoreClient):
         """
         request_dict = search_request.dict()
 
+        # Be specific about the ids
         request_dict["item_ids"] = request_dict.pop("ids")
         request_dict["collection_ids"] = request_dict.pop("collections")
 
@@ -97,7 +96,11 @@ class CoreCrudClient(BaseCoreClient):
 
         items = items.execute()
 
-        item_serializer = serializers.ItemAssetSearchSerializer if self.extension_is_enabled('AssetSearchExtension') else serializers.ItemSerializer
+        if self.extension_is_enabled('AssetSearchExtension'):
+            item_serializer = serializers.ItemAssetSearchSerializer
+        else:
+            item_serializer = serializers.ItemSerializer
+
         for item in items:
             response_item = item_serializer.db_to_stac(item, base_url)
             response.append(response_item)
@@ -165,7 +168,11 @@ class CoreCrudClient(BaseCoreClient):
 
         items = items.execute()
 
-        item_serializer = serializers.ItemAssetSearchSerializer if self.extension_is_enabled('AssetSearchExtension') else serializers.ItemSerializer
+        if self.extension_is_enabled('AssetSearchExtension'):
+            item_serializer = serializers.ItemAssetSearchSerializer
+        else:
+            item_serializer = serializers.ItemSerializer
+
         for item in items:
             response_item = item_serializer.db_to_stac(item, base_url)
             response.append(response_item)
@@ -229,7 +236,10 @@ class CoreCrudClient(BaseCoreClient):
 
         base_url = str(kwargs['request'].base_url)
 
-        item_serializer = serializers.ItemAssetSearchSerializer if self.extension_is_enabled('AssetSearchExtension') else serializers.ItemSerializer
+        if self.extension_is_enabled('AssetSearchExtension'):
+            item_serializer = serializers.ItemAssetSearchSerializer
+        else:
+            item_serializer = serializers.ItemSerializer
 
         return item_serializer.db_to_stac(item, base_url)
 
@@ -347,9 +357,14 @@ class CoreCrudClient(BaseCoreClient):
 
         base_url = str(kwargs['request'].base_url)
 
+        if self.extension_is_enabled('AssetSearchExtension'):
+            item_serializer = serializers.ItemAssetSearchSerializer
+        else:
+            item_serializer = serializers.ItemSerializer
+
         for item in items:
             response.append(
-                serializers.ItemSerializer.db_to_stac(
+                item_serializer.db_to_stac(
                     item, base_url
                 )
             )

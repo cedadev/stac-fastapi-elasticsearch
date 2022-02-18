@@ -1,28 +1,78 @@
 [
   {
-    "_id": "eaa01ebf68d27735f5d0aed71aa1dc59",
-    "_source": {
-      "media_type": "OBJECT_STORE",
-      "location": "gs://cmip6/CMIP6/HighResMIP/CMCC/CMCC-CM2-HR4/highresSST-present/r1i1p1f1/Amon/va/gn/v20170706/",
-      "filename": "v20170706",
-      "magic_number": "application/octet-stream",
-      "categories": [
+    "_index" : "ceda-assets-staging-2021-12-17",
+    "_type" : "_doc",
+    "_id" : "6615a3af020f8081cd1392b136dc6d26",
+    "_score" : 1.0,
+    "_source" : {
+      "media_type" : "POSIX",
+      "location" : "/badc/faam/data/2005/b069-jan-05/core_raw/core_faam_20050105_r0_b069_rawdrs.zip",
+      "filename" : "core_faam_20050105_r0_b069_rawdrs.zip",
+      "extension" : ".zip",
+      "size" : 19734925,
+      "modified_time" : "2005-02-11T12:52:58",
+      "magic_number" : "application/zip",
+      "categories" : [
         "data"
       ],
-      "item_id": "a3641b64ea5a3aba7a2c40663e798246"
+      "item_id" : "81420fb98d5c2bdd5814c5879543b300",
+      "properties" : {
+        "general_data_type" : "aircraft",
+        "datetime" : "2005-01-05T00:00:00",
+        "gemet_topic" : [
+          "Climatology, meteorology, atmosphere"
+        ],
+        "flight_number" : "b069",
+        "source_classifier" : "undefined",
+        "inspire_theme" : "Meteorological geographical features",
+        "permitted_use" : [
+          "undefined",
+          "academic",
+          "educational",
+          "commercial",
+          "policy",
+          "personal"
+        ],
+        "platform" : "faam"
+      }
     }
   },
   {
-    "_id": "765cc3bf72c1e5759420a4600071f803",
-    "_source": {
-      "media_type": "OBJECT_STORE",
-      "location": "gs://cmip6/CMIP6/HighResMIP/CMCC/CMCC-CM2-HR4/highresSST-present/r1i1p1f1/Amon/evspsbl/gn/v20170706/",
-      "filename": "v20170706",
-      "magic_number": "application/octet-stream",
-      "categories": [
+    "_index" : "ceda-assets-staging-2021-12-17",
+    "_type" : "_doc",
+    "_id" : "4884d83f89bedf1b16e65327a3da77da",
+    "_score" : 1.0,
+    "_source" : {
+      "media_type" : "POSIX",
+      "location" : "/badc/faam/data/2005/b069-jan-05/core_raw/core_faam_20050105_r0_b069_rawgps.zip",
+      "filename" : "core_faam_20050105_r0_b069_rawgps.zip",
+      "extension" : ".zip",
+      "size" : 918774,
+      "modified_time" : "2005-02-11T12:52:59",
+      "magic_number" : "application/zip",
+      "categories" : [
         "data"
       ],
-      "item_id": "8c462277a5877d4adc00642e2a78af6e"
+      "item_id" : "81420fb98d5c2bdd5814c5879543b300",
+      "properties" : {
+        "general_data_type" : "aircraft",
+        "datetime" : "2005-01-05T00:00:00",
+        "gemet_topic" : [
+          "Climatology, meteorology, atmosphere"
+        ],
+        "flight_number" : "b069",
+        "source_classifier" : "undefined",
+        "inspire_theme" : "Meteorological geographical features",
+        "permitted_use" : [
+          "undefined",
+          "academic",
+          "educational",
+          "commercial",
+          "policy",
+          "personal"
+        ],
+        "platform" : "faam"
+      }
     }
   }
 ]

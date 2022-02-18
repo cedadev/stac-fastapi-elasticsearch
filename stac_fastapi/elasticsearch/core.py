@@ -124,8 +124,8 @@ class CoreCrudClient(BaseCoreClient):
         if self.extension_is_enabled('ContextCollectionExtension'):
             context = item_collection.get('context', {})
 
-            if request_dict.get('collections'):
-                context['collections'] = request_dict['collections']
+            if request_dict.get('collection_ids'):
+                context['collections'] = request_dict['collection_ids']
             else:
                 context['collections'] = [c.key for c in items.aggregations.collections]
 

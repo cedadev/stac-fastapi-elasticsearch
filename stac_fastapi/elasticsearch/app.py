@@ -29,6 +29,7 @@ from stac_fastapi.elasticsearch.config import settings
 from stac_fastapi_freetext.free_text import FreeTextExtension
 from stac_fastapi_context_collections.context_collections import ContextCollectionExtension
 from stac_fastapi_asset_search.asset_search import AssetSearchExtension
+from stac_fastapi_asset_search.client import create_asset_search_get_request_model, create_asset_search_post_request_model
 
 
 extensions = [
@@ -42,7 +43,14 @@ extensions = [
 ]
 
 # Adding the asset search extension seperately as it uses the other extensions
-extensions.append(AssetSearchExtension(client=AssetSearchClient(extensions=extensions), settings=settings))
+extensions.append(
+    AssetSearchExtension(
+        client=AssetSearchClient(extensions=extensions),
+        asset_search_get_request_model=create_asset_search_get_request_model(extensions),
+        asset_search_post_request_model=create_asset_search_post_request_model(extensions),
+        settings=settings
+    )
+)
 
 session = Session.create_from_settings(settings)
 api = StacApi(

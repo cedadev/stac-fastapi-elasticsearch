@@ -1,56 +1,157 @@
 {
-  "mappings": {
-    "properties": {
-      "checksum": {
-        "properties": {
-          "checksum": {
-            "type": "keyword"
+  "mappings" : {
+    "properties" : {
+      "categories" : {
+        "type" : "text",
+        "fields" : {
+          "keyword" : {
+            "type" : "keyword",
+            "ignore_above" : 256
+          }
+        }
+      },
+      "checksum" : {
+        "properties" : {
+          "checksum" : {
+            "type" : "keyword"
           },
-          "time": {
-            "type": "date"
+          "time" : {
+            "type" : "date"
           }
         }
       },
-      "collection_id": {
-        "type": "keyword"
+      "collection_id" : {
+        "type" : "keyword"
       },
-      "extension": {
-        "type": "keyword"
+      "extension" : {
+        "type" : "keyword",
+        "ignore_above" : 256
       },
-      "filename": {
-        "type": "text",
-        "fields": {
-          "keyword": {
-            "type": "keyword"
+      "filename" : {
+        "type" : "text",
+        "fields" : {
+          "keyword" : {
+            "type" : "keyword",
+            "ignore_above" : 256
           }
         }
       },
-      "location": {
-        "type": "text",
-        "analyzer": "path_analyzer"
+      "filepath_type_location" : {
+        "type" : "text",
+        "analyzer" : "path_analyzer"
       },
-      "item_id": {
-        "type": "keyword"
+      "item_id" : {
+        "type" : "text",
+        "fields" : {
+          "keyword" : {
+            "type" : "keyword",
+            "ignore_above" : 256
+          }
+        }
       },
-      "media_type": {
-        "type": "keyword"
+      "location" : {
+        "type" : "text",
+        "fields" : {
+          "keyword" : {
+            "type" : "keyword",
+            "ignore_above" : 256
+          }
+        }
+      },
+      "magic_number" : {
+        "type" : "text",
+        "fields" : {
+          "keyword" : {
+            "type" : "keyword",
+            "ignore_above" : 256
+          }
+        }
+      },
+      "media_type" : {
+        "type" : "text",
+        "fields" : {
+          "keyword" : {
+            "type" : "keyword",
+            "ignore_above" : 256
+          }
+        }
+      },
+      "modified_time" : {
+        "type" : "date"
+      },
+      "properties" : {
+        "properties" : {
+          "datetime" : {
+            "type" : "date"
+          },
+          "flight_number" : {
+            "type" : "text",
+            "fields" : {
+              "keyword" : {
+                "type" : "keyword",
+                "ignore_above" : 256
+              }
+            }
+          },
+          "gemet_topic" : {
+            "type" : "text",
+            "fields" : {
+              "keyword" : {
+                "type" : "keyword",
+                "ignore_above" : 256
+              }
+            }
+          },
+          "general_data_type" : {
+            "type" : "text",
+            "fields" : {
+              "keyword" : {
+                "type" : "keyword",
+                "ignore_above" : 256
+              }
+            }
+          },
+          "inspire_theme" : {
+            "type" : "text",
+            "fields" : {
+              "keyword" : {
+                "type" : "keyword",
+                "ignore_above" : 256
+              }
+            }
+          },
+          "permitted_use" : {
+            "type" : "text",
+            "fields" : {
+              "keyword" : {
+                "type" : "keyword",
+                "ignore_above" : 256
+              }
+            }
+          },
+          "platform" : {
+            "type" : "text",
+            "fields" : {
+              "keyword" : {
+                "type" : "keyword",
+                "ignore_above" : 256
+              }
+            }
+          },
+          "source_classifier" : {
+            "type" : "text",
+            "fields" : {
+              "keyword" : {
+                "type" : "keyword",
+                "ignore_above" : 256
+              }
+            }
+          }
+        }
+      },
+      "size" : {
+        "type" : "long"
       }
     }
-  },
-  "settings": {
-    "number_of_shards": "1",
-    "analysis": {
-      "analyzer": {
-        "path_analyzer": {
-          "tokenizer": "path_tokenizer"
-        }
-      },
-      "tokenizer": {
-        "path_tokenizer": {
-          "type": "path_hierarchy"
-        }
-      }
-    },
-    "number_of_replicas": "0"
   }
 }

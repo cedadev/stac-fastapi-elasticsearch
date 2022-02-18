@@ -53,6 +53,8 @@ class AssetSearchClient(BaseAssetSearchClient):
             AssetCollection containing assets which match the search criteria.
         """
         request_dict = search_request.dict()
+        if "items" in request_dict.keys():
+            request_dict["item_ids"] = request_dict.pop("items")
 
         assets = get_queryset(self, self.asset_table, **request_dict)
         result_count = assets.count()
@@ -65,7 +67,7 @@ class AssetSearchClient(BaseAssetSearchClient):
 
         for hit in hits:
             asset = ElasticsearchAsset.from_es(hit.to_dict())
-            response_asset = serializers.AssetSerializer.db_to_stac(asset, base_url, kwargs['request'].collection)
+            response_asset = serializers.AssetSerializer.db_to_stac(asset, base_url, getattr(kwargs['request'], "collection", None))
             response.append(response_asset)
 
         asset_collection = AssetCollection(

@@ -100,7 +100,7 @@ def get_queryset(client, table: "Document" , **kwargs) -> Search:
         })
 
     if bbox := kwargs.get('bbox'):
-        qs = qs.filter('geo_shape', bbox={
+        qs = qs.filter('geo_shape', spatial_bbox={
             'shape': {
                 'type': 'envelope',
                 'coordinates': Coordinates.from_wgs84(bbox).to_geojson()
@@ -150,7 +150,7 @@ def get_queryset(client, table: "Document" , **kwargs) -> Search:
 
         field_mapping = {
             'datetime': 'properties.datetime',
-            'bbox': 'bbox.coordinates'
+            'bbox': 'spatial.bbox.coordinates'
         }
 
         if qfilter := kwargs.get('filter'):

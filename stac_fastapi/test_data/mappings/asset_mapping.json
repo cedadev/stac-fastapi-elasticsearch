@@ -153,5 +153,21 @@
         "type" : "long"
       }
     }
+  },
+  "settings": {
+    "number_of_shards": "1",
+    "analysis": {
+      "analyzer": {
+        "path_analyzer": {
+          "tokenizer": "path_tokenizer"
+        }
+      },
+      "tokenizer": {
+        "path_tokenizer": {
+          "type": "path_hierarchy"
+        }
+      }
+    },
+    "number_of_replicas": "0"
   }
 }

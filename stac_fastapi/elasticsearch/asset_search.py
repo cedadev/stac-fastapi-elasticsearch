@@ -102,11 +102,11 @@ class AssetSearchClient(BaseAssetSearchClient):
             AssetCollection containing assets which match the search criteria.
         """
         search = {
-            'item_ids': [items] if items else None,
+            'item_ids': items.split(",") if items else None,
             'asset_ids': ids,
             'bbox': bbox,
             'datetime': datetime,
-            'role': [role] if role else None,
+            'role': role.split(",") if role else None,
             'limit': limit,
             **kwargs
         }

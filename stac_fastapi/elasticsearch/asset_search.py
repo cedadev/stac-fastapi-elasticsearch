@@ -62,11 +62,7 @@ class AssetSearchClient(BaseAssetSearchClient):
         response = []
         base_url = str(kwargs['request'].base_url)
 
-        assets = assets.execute()
-        hits = assets.hits.hits
-
-        for hit in hits:
-            asset = ElasticsearchAsset.from_es(hit.to_dict())
+        for asset in assets.execute():
             response_asset = serializers.AssetSerializer.db_to_stac(asset, base_url, getattr(kwargs['request'], "collection", None))
             response.append(response_asset)
 
@@ -81,7 +77,7 @@ class AssetSearchClient(BaseAssetSearchClient):
             context = generate_context(
                 search_request.limit,
                 result_count,
-                int(getattr(search_request, 'page'))
+                getattr(search_request, 'page')
             )
             asset_collection['context'] = context
 
@@ -94,7 +90,7 @@ class AssetSearchClient(BaseAssetSearchClient):
             ids: Optional[List[str]] = None,
             bbox: Optional[List[NumType]] = None,
             datetime: Optional[Union[str, datetime]] = None,
-            role: Optional[str] = None,
+            role: Optional[List[str]] = None,
             limit: Optional[int] = 10,
             **kwargs
     ) -> AssetCollection:
@@ -106,11 +102,11 @@ class AssetSearchClient(BaseAssetSearchClient):
             AssetCollection containing assets which match the search criteria.
         """
         search = {
-            'item_ids': items,
+            'item_ids': [items] if items else None,
             'asset_ids': ids,
             'bbox': bbox,
             'datetime': datetime,
-            'role': role,
+            'role': [role] if role else None,
             'limit': limit,
             **kwargs
         }
@@ -121,9 +117,7 @@ class AssetSearchClient(BaseAssetSearchClient):
         response = []
         base_url = str(kwargs['request'].base_url)
 
-        assets = assets.execute()
-
-        for asset in assets:
+        for asset in assets.execute():
             response_asset = serializers.AssetSerializer.db_to_stac(asset, base_url, collection)
             response.append(response_asset)
 

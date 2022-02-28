@@ -90,7 +90,6 @@ def get_queryset(client, table: "Document" , **kwargs) -> Search:
     if collection_ids := kwargs.get('collection_ids'):
         qs = qs.filter('terms', collection_id__keyword=collection_ids)
 
-    print(qs.to_dict())
     if intersects := kwargs.get('intersects'):
         qs = qs.filter('geo_shape', geometry={
             'shape': {
@@ -145,6 +144,9 @@ def get_queryset(client, table: "Document" , **kwargs) -> Search:
     if page := kwargs.get('page'):
         page = int(page)
         qs = qs[(page - 1) * limit:page * limit]
+
+    if role := kwargs.get('role'):
+        qs = qs.filter('terms', categories=role)
 
     if client.extension_is_enabled('FilterExtension'):
 

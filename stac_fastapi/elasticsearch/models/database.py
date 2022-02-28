@@ -239,15 +239,6 @@ class ElasticsearchAsset(Document):
         if getattr(self, 'media_type','POSIX'):
             return f'https://dap.ceda.ac.uk{self.location}'
 
-    def get_roles(self) -> Optional[List]:
-
-        try:
-            roles = getattr(self, 'categories')
-        except AttributeError:
-            return
-
-        return list(roles)
-
     def to_stac(self) -> Dict:
         """
         Convert Elasticsearch DSL asset into a STAC asset.
@@ -257,7 +248,7 @@ class ElasticsearchAsset(Document):
             href=self.get_url(),
             type=getattr(self, 'magic_number', None),
             title=getattr(self, 'filename', None),
-            roles=self.get_roles()
+            roles=self.get_role()
         )
 
         return asset

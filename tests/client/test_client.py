@@ -21,23 +21,23 @@ def load_file(filename: str):
         return json.load(file)
 
 def test_get_collection(app_client):
-    coll_id = "Fj3reHsBhuk7QqVbt7P-"
+    coll_id = "d5337672a8ca3a389964454059767426"
     resp = app_client.get(f"/collections/{coll_id}")
     resp_json = resp.json()
 
     assert resp_json["id"] == coll_id
 
     # check a few keys
-    assert resp_json.get("title") == "CMIP6"
-    assert resp_json.get("summaries").get("member") == ['r10i1p1f1', 'r1i1p1f1']
-    assert resp_json.get("summaries").get("version") == ['v20170706', 'v20180305', 'v20190528']
+    assert resp_json.get("title") == "FAAM"
+    assert resp_json.get("summaries").get("general_data_type") == ['aircraft']
+    assert resp_json.get("summaries").get("flight_number") == ['b069']
 
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                
 def test_create_new_collection(app_client):
-    data = load_file("collections/cmip6/collections.json")
+    data = load_file("collections/faam/collections.json")
 
     new_coll = data[0].copy()["_source"]
-    new_id = 'Fj3rerRFgu7QqVbt7P-'
+    new_id = 'd5337672a8ca3a389964454059767426'
     new_coll["id"] = new_id
     resp_json = app_client.post(f"/collections", json=new_coll).json()
 
@@ -49,35 +49,35 @@ def test_create_new_collection(app_client):
     assert coll["id"] == new_id
 
     # check a few keys
-    assert resp_json.get("title") == "CMIP6"
-    assert resp_json.get("summaries").get("member") == ['r10i1p1f1', 'r1i1p1f1']
-    assert resp_json.get("summaries").get("version") == ['v20170706', 'v20180305', 'v20190528']
+    assert resp_json.get("title") == "FAAM"
+    assert resp_json.get("summaries").get("general_data_type") == ['aircraft']
+    assert resp_json.get("summaries").get("flight_number") == ['b069']
 
 
 def test_create_collection_already_exists(app_client):
-    data = load_file("collections/cmip6/collections.json")[0]
-    data["id"] = 'Fj3reHsBhuk7QqVbt7P-'
+    data = load_file("collections/faam/collections.json")[0]
+    data["id"] = 'd5337672a8ca3a389964454059767426'
 
     resp = app_client.post(f"/collections", json=data)
     assert resp.status_code == 409
 
 
 def test_update_collection(app_client):
-    data = load_file("collections/cmip6/collections.json")[0]["_source"]
-    coll_id = "Fj3rerRFgu7QqVbt7P-"
+    data = load_file("collections/faam/collections.json")[0]["_source"]
+    coll_id = "d5337672a8ca3a389964454059767426"
 
     # check collection exists
     resp_json = app_client.get(f"/collections/{coll_id}").json()
     assert resp_json["id"] == coll_id
 
-    # update with new keyword
-    data["keywords"].append("new_keyword")
+    # update with new description
+    data["properties"]["general_data_type"].append("boat")
     data['id'] = coll_id
     app_client.put(f"/collections", json=data)
 
     # check if collection has been updated
     resp_json = app_client.get(f"/collections/{coll_id}").json()
-    assert "new_keyword" in resp_json.get("keywords")
+    assert "boat" in resp_json.get("properties").get("general_data_type")
 
 
 def test_get_collection_does_not_exist(app_client):
@@ -87,7 +87,7 @@ def test_get_collection_does_not_exist(app_client):
  
 
 def test_get_item(app_client):
-    coll_id = "Fj3reHsBhuk7QqVbt7P-"
+    coll_id = "d5337672a8ca3a389964454059767426"
     item_id = "8c462277a5877d4adc00642e2a78af6e"
 
     resp = app_client.get(f"/collections/{coll_id}/items/{item_id}")
@@ -102,22 +102,22 @@ def test_get_item(app_client):
 
 
 def test_get_collection_items(app_client):
-    coll_id = "Fj3reHsBhuk7QqVbt7P-"
+    coll_id = "d5337672a8ca3a389964454059767426"
     resp = app_client.get(f"/collections/{coll_id}/items")
     resp_json = resp.json()
 
-    assert resp_json['context']["returned"] ==  resp_json["context"]["matched"] == 2
+    assert resp_json['context']["returned"] ==  resp_json["context"]["matched"] == 1
 
     for item in resp_json['features']:
         assert item["collection"] == coll_id
 
 
 def test_create_item(app_client):
-    data = load_file("collections/cmip6/items.json")
-    coll_id = "Fj3rerRFgu7QqVbt7P-"
+    data = load_file("collections/faam/items.json")
+    coll_id = "d5337672a8ca3a389964454059767426"
 
     new_item = data[0].copy()["_source"]
-    new_id = 'e7654b64ea5a3efe7a2c65433a798246'
+    new_id = '81420fb98d5c2bdd5814c5879543b301'
     new_item["id"] = new_id
     new_item["collection"] = coll_id
     new_item.pop("collection_id")
@@ -140,18 +140,18 @@ def test_create_item(app_client):
 
 
 def test_create_item_already_exists(app_client):
-    data = load_file("collections/cmip6/items.json")[0]
-    data["id"] = "a3641b64ea5a3aba7a2c40663e798246"
-    coll_id = "Fj3reHsBhuk7QqVbt7P-"
+    data = load_file("collections/faam/items.json")[0]
+    data["id"] = "81420fb98d5c2bdd5814c5879543b300"
+    coll_id = "d5337672a8ca3a389964454059767426"
 
     resp = app_client.post(f"/collections/{coll_id}/items", json=data)
     assert resp.status_code == 409
 
 
 def test_update_item(app_client):
-    data = load_file("collections/cmip6/items.json")[0]["_source"]
-    coll_id = "Fj3rerRFgu7QqVbt7P-"
-    item_id = "e7654b64ea5a3efe7a2c65433a798246"
+    data = load_file("collections/faam/items.json")[0]["_source"]
+    coll_id = "d5337672a8ca3a389964454059767426"
+    item_id = "81420fb98d5c2bdd5814c5879543b300"
     data["collection"] = coll_id
     data["id"] = item_id
     data.pop("collection_id")
@@ -171,8 +171,8 @@ def test_update_item(app_client):
 
 
 def test_delete_item(app_client):
-    coll_id = "Fj3rerRFgu7QqVbt7P-"
-    item_id = "e7654b64ea5a3efe7a2c65433a798246"
+    coll_id = "d5337672a8ca3a389964454059767426"
+    item_id = "81420fb98d5c2bdd5814c5879543b300"
 
     # check the item exists
     resp_json = app_client.get(f"/collections/{coll_id}/items/{item_id}").json()
@@ -186,7 +186,7 @@ def test_delete_item(app_client):
 
 
 def test_delete_collection(app_client):
-    coll_id = 'Fj3rerRFgu7QqVbt7P-' # change this
+    coll_id = 'd5337672a8ca3a389964454059767426' # change this
 
     # check the collection exists
     resp_json = app_client.get(f"/collections/{coll_id}").json()

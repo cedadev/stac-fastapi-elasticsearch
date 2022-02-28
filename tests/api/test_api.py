@@ -91,7 +91,7 @@ def test_search_for_collection(app_client):
     
     # search for collection in items
     params = {
-        "collections": ["faam"]
+        "collections": ["d5337672a8ca3a389964454059767426"]
     }
 
     resp = app_client.post("/search", json=params)
@@ -109,7 +109,7 @@ def test_search_for_collection(app_client):
 
     # search for more than one collection
     params = {
-        "collections": ["faam", "Fj3reHsBhuk7QqVbt7P-"]
+        "collections": ["d5337672a8ca3a389964454059767426", "Fj3reHsBhuk7QqVbt7P-"]
     }
 
     resp = app_client.post("/search", json=params)
@@ -274,8 +274,7 @@ def test_asset_search_for_collection(app_client):
     resp_json = resp.json()
 
     assert "context" in resp_json
-    assert resp_json["context"]["returned"] == 10
-    assert resp_json["context"]["matched"] == 21
+    assert resp_json["context"]["returned"] == resp_json["context"]["matched"] == 2
 
 
 def test_asset_search_for_collection(app_client):
@@ -283,19 +282,16 @@ def test_asset_search_for_collection(app_client):
     
     # search for collection in items
     params = {
-        "items": ["81420fb98d5c2bdd5814c5879543b300"],
-        "page": 1
+        "items": ["81420fb98d5c2bdd5814c5879543b300"]
     }
 
     resp = app_client.post("/asset/search", json=params)
     resp_json = resp.json()
-    assert resp_json["context"]["returned"] == 10
-    assert resp_json["context"]["matched"] == 21
+    assert resp_json["context"]["returned"] == resp_json["context"]["matched"] == 2
 
     # search for collection that doesn't exist
     params = {
-        "items": ["Fj3reHsriut7QqVb34f*"],
-        "page": 1
+        "items": ["Fj3reHsriut7QqVb34f*"]
     }
 
     resp = app_client.post("/asset/search", json=params)
@@ -304,30 +300,25 @@ def test_asset_search_for_collection(app_client):
 
     # search for more than one collection
     params = {
-        "items": ["81420fb98d5c2bdd5814c5879543b300", "Fj3reHsBhuk7QqVbt7P-"],
-        "page": 1
+        "items": ["81420fb98d5c2bdd5814c5879543b300", "Fj3reHsBhuk7QqVbt7P-"]
     }
 
     resp = app_client.post("/asset/search", json=params)
     resp_json = resp.json()
-    assert resp_json["context"]["returned"] == 10
-    assert resp_json["context"]["matched"] == 21
+    assert resp_json["context"]["returned"] == resp_json["context"]["matched"] == 2
 
 
 def test_asset_search_date_interval(app_client):
     """Check searching with a date interval"""
     
     params = {
-        "datetime": "2005-01-04T00:00:00/2005-01-06T00:00:00",
-        "page": 1
+        "datetime": "2005-01-04T00:00:00/2005-01-06T00:00:00"
     }
 
     resp = app_client.post("/asset/search", json=params)
     assert resp.status_code == 200
     resp_json = resp.json()
-    assert resp_json["context"]["returned"] == 10
-    assert resp_json["context"]["matched"] == 21
-    print(resp_json)
+    assert resp_json["context"]["returned"] == resp_json["context"]["matched"] == 2
     assert resp_json["features"][0]["properties"]["datetime"] == "2005-01-05T00:00:00"
 
 
@@ -358,6 +349,5 @@ def test_asset_datetime_non_interval(app_client):
         assert resp.status_code == 200
 
         resp_json = resp.json()
-        assert resp_json["context"]["returned"] == 10
-        assert resp_json["context"]["matched"] == 21
+        assert resp_json["context"]["returned"] == resp_json["context"]["matched"] == 2
         assert resp_json["features"][0]["properties"]["datetime"][0:19] == date[0:19]

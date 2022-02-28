@@ -9,14 +9,14 @@ __license__ = 'BSD - see LICENSE file in top-level package directory'
 __contact__ = 'richard.d.smith@stfc.ac.uk'
 
 from stac_fastapi.elasticsearch.types.context import ResultContext
-from typing import Optional
+from typing import Optional, Union
 
 
-def generate_context(limit: int, result_count: int, page: Optional[int]) -> ResultContext:
+def generate_context(limit: int, result_count: int, page: Optional[Union[str, int]]) -> ResultContext:
     """Generate context"""
 
     # Default page to 1
-    page = page or 1
+    page = int(page or 1)
 
     returned = limit if page * limit <= result_count else result_count - (page - 1) * limit
 

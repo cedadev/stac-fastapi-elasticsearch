@@ -218,7 +218,7 @@ class AssetSerializer(Serializer):
     ) -> database.ElasticsearchAsset:
         db_item = database.ElasticsearchAsset(
             id=stac_data.get('id'),
-            role=stac_data.get('role'),
+            role=stac_data.get('catagories'),
             bbox=stac_data.get('bbox'),
             item_id=stac_data.get('item'),
             properties=stac_data.get('properties', {}),

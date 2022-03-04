@@ -82,13 +82,13 @@ def get_queryset(client, table: "Document" , **kwargs) -> Search:
     qs = table.search()
 
     if asset_ids := kwargs.get('asset_ids'):
-        qs = qs.filter('terms', asset_id__keyword=asset_ids)
+        qs = qs.filter('terms', asset_id=asset_ids)
 
     if item_ids := kwargs.get('item_ids'):
-        qs = qs.filter('terms', item_id__keyword=item_ids)
+        qs = qs.filter('terms', item_id=item_ids)
 
     if collection_ids := kwargs.get('collection_ids'):
-        qs = qs.filter('terms', collection_id__keyword=collection_ids)
+        qs = qs.filter('terms', collection_id=collection_ids)
 
     if intersects := kwargs.get('intersects'):
         qs = qs.filter('geo_shape', geometry={

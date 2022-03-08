@@ -23,7 +23,7 @@ from .utils import get_queryset
 
 # Stac FastAPI asset search imports
 from stac_fastapi_asset_search.client import BaseAssetSearchClient
-from stac_fastapi_asset_search.types import AssetCollection, AssetSearchPostRequest
+from stac_fastapi_asset_search.types import Asset, AssetCollection, AssetSearchPostRequest
 
 # Third-party imports
 import attr
@@ -55,6 +55,9 @@ class AssetSearchClient(BaseAssetSearchClient):
         request_dict = search_request.dict()
         if "items" in request_dict.keys():
             request_dict["item_ids"] = request_dict.pop("items")
+        
+        if "ids" in request_dict.keys():
+            request_dict["asset_ids"] = request_dict.pop("ids")
 
         assets = get_queryset(self, self.asset_table, **request_dict)
         result_count = assets.count()
@@ -152,3 +155,25 @@ class AssetSearchClient(BaseAssetSearchClient):
             collection = collection_id,
             **kwargs
         )
+    
+    def get_asset(self, collection_id: str, item_id: str, asset_id: str, **kwargs) -> Asset:
+        """Get asset by id.
+
+        Called with `GET /collections/{collection_id}/items/{item_id}/assets/{asset_id}`.
+
+        Args:
+            asset_id: Id of the asset.
+            item_id: Id of the asset's item.
+            collection_id: Id of the asset's item's collection.
+
+        Returns:
+            Asset.
+        """
+        return self.get_asset_search(
+            ids = asset_id,
+            items = item_id,
+            collection = collection_id,
+            **kwargs
+        )
+
+

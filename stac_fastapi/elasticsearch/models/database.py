@@ -238,6 +238,48 @@ class ElasticsearchAsset(Document):
         """
         if getattr(self, 'media_type','POSIX'):
             return f'https://dap.ceda.ac.uk{self.location}'
+    
+    def get_size(self) -> int:
+
+        try:
+            return getattr(self, 'size')
+        except AttributeError:
+            return
+
+    def get_media_type(self) -> str:
+
+        try:
+            return getattr(self, 'media_type')
+        except AttributeError:
+            return
+
+    def get_filename(self) -> str:
+
+        try:
+            return getattr(self, 'filename')
+        except AttributeError:
+            return
+
+    def get_modified_time(self) -> str:
+
+        try:
+            return getattr(self, 'modified_time')
+        except AttributeError:
+            return
+
+    def get_magic_number(self) -> str:
+
+        try:
+            return getattr(self, 'magic_number')
+        except AttributeError:
+            return
+
+    def get_extension(self) -> str:
+
+        try:
+            return getattr(self, 'extension')
+        except AttributeError:
+            return
 
     def to_stac(self) -> Dict:
         """

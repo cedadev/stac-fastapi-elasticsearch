@@ -27,6 +27,8 @@ from stac_fastapi_asset_search.types import Asset, AssetCollection, AssetSearchP
 
 # Third-party imports
 import attr
+from elasticsearch import NotFoundError
+from fastapi import HTTPException
 
 # Typing imports
 from typing import Type, Optional, List, Union
@@ -88,9 +90,9 @@ class AssetSearchClient(BaseAssetSearchClient):
     
     def get_asset_search(
             self,
+            ids: Optional[List[str]] = None,
             items: Optional[List[str]]= None,
             collection: Optional[str] = None,
-            ids: Optional[List[str]] = None,
             bbox: Optional[List[NumType]] = None,
             datetime: Optional[Union[str, datetime]] = None,
             role: Optional[List[str]] = None,
@@ -105,11 +107,11 @@ class AssetSearchClient(BaseAssetSearchClient):
             AssetCollection containing assets which match the search criteria.
         """
         search = {
-            'item_ids': items.split(",") if items else None,
             'asset_ids': ids,
+            'item_ids': items,
             'bbox': bbox,
             'datetime': datetime,
-            'role': role.split(",") if role else None,
+            'role': role,
             'limit': limit,
             **kwargs
         }
@@ -169,11 +171,24 @@ class AssetSearchClient(BaseAssetSearchClient):
         Returns:
             Asset.
         """
-        return self.get_asset_search(
-            ids = asset_id,
-            items = item_id,
-            collection = collection_id,
-            **kwargs
-        )
+        try:
+            asset = self.asset_table.get(id=asset_id)
+        except NotFoundError:
+            raise (
+                HTTPException(
+                    status_code=404,
+                    detail=f'Asset: {asset_id} from Item: {item_id} not found'
+                )
+            )
 
+        if not getattr(asset, 'item_id', None) == item_id:
+            raise (
+                HTTPException(
+                    status_code=404,
+                    detail=f'Asset: {asset_id} from Item: {item_id} not found'
+                )
+            )
 
+        base_url = str(kwargs['request'].base_url)
+
+        return serializers.AssetSerializer.db_to_stac(asset, base_url, collection_id)

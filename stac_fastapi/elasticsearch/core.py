@@ -28,10 +28,6 @@ from stac_fastapi.types import stac as stac_types
 from stac_pydantic.shared import MimeTypes
 from stac_pydantic.links import Relations
 
-# CQL Filters imports
-from pygeofilter.parsers.cql_json import parse as parse_json
-from pygeofilter_elasticsearch import to_filter
-
 # Third-party imports
 import attr
 from elasticsearch import NotFoundError

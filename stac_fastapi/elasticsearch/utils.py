@@ -196,6 +196,6 @@ def get_queryset(client, table: "Document" , **kwargs) -> Search:
 
     if client.extension_is_enabled('ContextCollectionExtension'):
         if not collection_ids:
-            qs.aggs.bucket('collections', 'terms', field='collection')
+            qs.aggs.bucket('collections', 'terms', field='collection_id')
 
     return qs

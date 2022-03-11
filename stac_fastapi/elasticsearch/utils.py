@@ -18,6 +18,8 @@ from stac_fastapi.elasticsearch.models.utils import Coordinates
 
 # CQL Filters imports
 from pygeofilter.parsers.cql_json import parse as parse_json
+from pygeofilter.parsers.cql2_text import parse as parse_text
+from pygeofilter.parsers.cql2_json import parse as parse_json2
 from pygeofilter_elasticsearch import to_filter
 
 # Third-party imports
@@ -156,7 +158,16 @@ def get_queryset(client, table: "Document" , **kwargs) -> Search:
         }
 
         if qfilter := kwargs.get('filter'):
-            ast = parse_json(qfilter)
+            if filter_lang := kwargs.get('filter-lang'):
+                if filter_lang == "cql2-json":
+                    ast = parse_json2(qfilter)
+                elif filter_lang == "cql-text":
+                    ast = parse_text(qfilter)
+                elif filter_lang == "cql-json":
+                    ast = parse_json(qfilter)
+            else:
+                ast = parse_json(qfilter)
+
             try:
                 qfilter = to_filter(
                     ast,

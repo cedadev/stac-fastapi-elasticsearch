@@ -156,6 +156,9 @@ class CoreCrudClient(BaseCoreClient):
             **kwargs
         }
 
+        if 'filter-lang' not in search.keys():
+            search['filter-lang'] = "cql-text"
+
         items = get_queryset(self, self.item_table, **search)
         result_count = items.count()
 

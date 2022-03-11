@@ -116,6 +116,9 @@ class AssetSearchClient(BaseAssetSearchClient):
             **kwargs
         }
 
+        if 'filter-lang' not in search.keys():
+            search['filter-lang'] = "cql-text"
+
         assets = get_queryset(self, self.asset_table, **search)
         result_count = assets.count()
 

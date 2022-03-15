@@ -151,8 +151,7 @@ class CollectionSerializer(Serializer):
     @staticmethod
     def stac_to_db_extent(extent: Dict[str, Any]) -> Dict[str, Any]:
         extent = extent
-        temporal = extent.get('temporal')
-        if temporal:
+        if temporal := extent.get('temporal'):
             for k, d in temporal.items():
                 extent['temporal'][k] = parser.parse(d).isoformat()
         return extent

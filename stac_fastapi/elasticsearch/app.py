@@ -12,7 +12,7 @@ from stac_fastapi.api.app import StacApi
 from stac_fastapi.extensions.core import (
     ContextExtension,
     # FieldsExtension,
-    # SortExtension,
+    SortExtension,
     FilterExtension,
     PaginationExtension,
     TransactionExtension
@@ -32,7 +32,7 @@ from stac_fastapi_context_collections.context_collections import ContextCollecti
 extensions = [
     ContextExtension(),
     # FieldsExtension(),
-    # SortExtension(),
+    SortExtension(),
     FilterExtension(client=FiltersClient()),
     FreeTextExtension(),
     ContextCollectionExtension(),

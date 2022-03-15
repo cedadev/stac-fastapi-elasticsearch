@@ -232,7 +232,13 @@ class CoreCrudClient(BaseCoreClient):
         if self.extension_is_enabled('ContextCollectionExtension'):
             if not collections:
                 qs.aggs.bucket('collections', 'terms', field='collection_id')
-        
+
+        if self.extension_is_enabled('FieldsExtension'):
+            if fields := kwargs.get('fields'):
+                if isinstance(fields, list):
+                    fields = [field.lstrip('+') for field in fields]
+                qs = qs.source(fields)
+
         return qs
 
     def get_search(

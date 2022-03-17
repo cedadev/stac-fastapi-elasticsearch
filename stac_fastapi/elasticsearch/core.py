@@ -207,16 +207,15 @@ class CoreCrudClient(BaseCoreClient):
                 qs.aggs.bucket('collections', 'terms', field='collection_id.keyword')
 
         if self.extension_is_enabled('SortExtension'):
-            sort_parms = []
+            sort_params = []
             if sortby := kwargs.get('sortby'):
                 for s in sortby:
                     if isinstance(s, str):
-                        s= f"{'-' if s.startswith('-') else ''}properties.{s.lstrip('+-')}"
+                        s = s.lstrip('+')
                     elif isinstance(s, dict):
-                        s = {f"properties.{s['field']}":{"order":s['direction']}}
-                    sort_parms.append(s)
-            qs = qs.sort(*sort_parms)
-
+                        s = {{s['field']}:{"order":s['direction']}}
+                    sort_params.append(s)
+            qs = qs.sort(*sort_params)
 
         return qs
 

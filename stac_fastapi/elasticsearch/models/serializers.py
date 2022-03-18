@@ -9,7 +9,8 @@ __license__ = 'BSD - see LICENSE file in top-level package directory'
 __contact__ = 'richard.d.smith@stfc.ac.uk'
 
 import abc
-from typing import TypedDict, Dict, Any
+from copy import copy
+from typing import TypedDict, Optional, List, Union, Dict, Any
 import elasticsearch_dsl
 
 from stac_fastapi.types import stac as stac_types
@@ -49,13 +50,13 @@ class Serializer(abc.ABC):
         """Transform database model to stac"""
         ...
 
-
 class ItemSerializer(Serializer):
 
     @classmethod
     def db_to_stac(cls,
                    db_model: database.ElasticsearchItem,
-                   base_url: str
+                   base_url: str,
+                   fields: Optional[Union[List[str],Dict]] = None
                    ) -> stac_types.Item:
         stac_extensions = getattr(db_model, 'stac_extensions', [])
 
@@ -65,17 +66,26 @@ class ItemSerializer(Serializer):
             item_id=db_model.meta.id
         ).create_links()
 
-        return stac_types.Item(
-            type='Feature',
-            stac_version=getattr(db_model, 'stac_version', STAC_VERSION_DEFAULT),
-            stac_extensions=stac_extensions,
-            id=db_model.meta.id,
-            collection=db_model.get_collection_id(),
-            bbox=db_model.get_bbox(),
-            properties=db_model.get_properties(),
-            links=item_links,
-            assets=db_model.get_stac_assets()
-        )
+        item_kwargs = {
+            'type': 'Feature',
+            'stac_version': getattr(db_model, 'stac_version', STAC_VERSION_DEFAULT),
+            'stac_extensions': stac_extensions,
+            'id': db_model.meta.id,
+            'collection': db_model.get_collection_id(),
+            'bbox': db_model.get_bbox(),
+            'properties': db_model.get_properties(),
+            'links': item_links,
+            'assets': db_model.get_stac_assets()
+        }
+
+        if fields:
+            for attribute in copy(item_kwargs).keys():
+                if "includes" in fields.keys() and attribute not in fields["includes"]:
+                    del item_kwargs[attribute]
+                elif "excludes" in fields.keys() and "includes" not in fields.keys() and attribute in fields["excludes"]:
+                    del item_kwargs[attribute]
+
+        return stac_types.Item(**item_kwargs)
 
     @classmethod
     def stac_to_db(

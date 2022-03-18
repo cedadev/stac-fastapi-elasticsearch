@@ -12,6 +12,7 @@ __contact__ = 'richard.d.smith@stfc.ac.uk'
 from datetime import datetime
 import logging
 from string import Template
+from stac_fastapi.elasticsearch.fields import generate_fields_dict
 
 # Package imports
 from stac_fastapi.elasticsearch.session import Session
@@ -95,7 +96,11 @@ class CoreCrudClient(BaseCoreClient):
         items = items.execute()
 
         for item in items:
-            response_item = serializers.ItemSerializer.db_to_stac(item, base_url)
+            if self.extension_is_enabled('FieldsExtension') and 'fields' in request_dict:
+                fields=generate_fields_dict(request_dict['fields'])
+                response_item = serializers.ItemSerializer.db_to_stac(item, base_url, fields=fields)
+            else:
+                response_item = serializers.ItemSerializer.db_to_stac(item, base_url)
             response.append(response_item)
 
         item_collection = stac_types.ItemCollection(
@@ -235,8 +240,7 @@ class CoreCrudClient(BaseCoreClient):
 
         if self.extension_is_enabled('FieldsExtension'):
             if fields := kwargs.get('fields'):
-                if isinstance(fields, list):
-                    fields = [field.lstrip('+') for field in fields]
+                fields = generate_fields_dict(fields)
                 qs = qs.source(fields)
 
         return qs
@@ -275,7 +279,11 @@ class CoreCrudClient(BaseCoreClient):
         items = items.execute()
 
         for item in items:
-            response_item = serializers.ItemSerializer.db_to_stac(item, base_url)
+            if self.extension_is_enabled('FieldsExtension'):
+                print(search['fields'])
+                response_item = serializers.ItemSerializer.db_to_stac(item, base_url, fields=kwargs['fields'])
+            else:
+                response_item = serializers.ItemSerializer.db_to_stac(item, base_url)
             response.append(response_item)
 
         links = generate_pagination_links(kwargs['request'], result_count, limit)

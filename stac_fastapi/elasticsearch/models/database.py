@@ -13,6 +13,7 @@ from elasticsearch_dsl import DateRange, GeoShape
 from .utils import Coordinates, rgetattr
 
 from typing import Optional, List, Dict
+from fnmatch import fnmatch
 
 
 DEFAULT_EXTENT = {
@@ -40,6 +41,12 @@ class ElasticsearchCollection(Document):
         s = super().search(**kwargs)
         s = s.filter('term', type='collection')
         return s
+    
+    @classmethod
+    def _matches(cls, hit):
+        # override _matches to match indices in a pattern instead of just ALIAS
+        # hit is the raw dict as returned by elasticsearch
+        return fnmatch(hit["_index"], cls._index._name + "*")
 
     def get_summaries(self) -> Optional[Dict]:
         """
@@ -104,6 +111,12 @@ class ElasticsearchItem(Document):
         s = s.filter('term', type='item')
 
         return s
+    
+    @classmethod
+    def _matches(cls, hit):
+        # override _matches to match indices in a pattern instead of just ALIAS
+        # hit is the raw dict as returned by elasticsearch
+        return fnmatch(hit["_index"], cls._index._name + "*")
 
     def search_assets(self):
         s = ElasticsearchAsset.search()
@@ -116,8 +129,17 @@ class ElasticsearchItem(Document):
     def assets(self):
         return list(self.search_assets().scan())
 
+    @property
+    def metadata_assets(self):
+        s = self.search_assets()
+        s = s.exclude('term', categories='data')
+        return list(s.scan())
+
     def get_stac_assets(self):
         return {asset.meta.id: asset.to_stac() for asset in self.assets}
+
+    def get_stac_metadata_assets(self):
+        return {asset.meta.id: asset.to_stac() for asset in self.metadata_assets}
 
     def get_properties(self) -> Dict:
 
@@ -154,14 +176,54 @@ class ElasticsearchItem(Document):
 
 class ElasticsearchAsset(Document):
 
-    def get_url(self) -> str:
-        """
-        Convert the path into a url where you can access the asset
-        """
-        if getattr(self, 'media_type','POSIX'):
-            return f'https://dap.ceda.ac.uk{self.location}'
+    type = 'Feature'
 
-    def get_roles(self) -> Optional[List]:
+    @classmethod
+    def search(cls, **kwargs):
+        s = super().search(**kwargs)
+        # s = s.exclude('term', categories__keyword='hidden')
+        # s = s.filter('exists', field='filepath_type_location')
+
+        return s
+    
+    @classmethod
+    def _matches(cls, hit):
+        # override _matches to match indices in a pattern instead of just ALIAS
+        return fnmatch(hit["_index"], cls._index._name + "*")
+
+    def get_properties(self) -> Dict:
+
+        try:
+            properties = getattr(self, 'properties')
+        except AttributeError:
+            return {}
+
+        return properties.to_dict()
+
+    def get_bbox(self):
+        """
+        Return a WGS84 formatted bbox
+
+        :return:
+        """
+
+        try:
+            coordinates = rgetattr(self, 'spatial.bbox.coordinates')
+        except AttributeError:
+            return
+
+        return Coordinates.from_geojson(coordinates).to_wgs84()
+
+    def get_item_id(self) -> str:
+        """
+        Return the item id
+        """
+        try:
+            return getattr(self, 'item_id')
+        except AttributeError:
+            return
+
+    def get_role(self) -> Optional[List]:
 
         try:
             roles = getattr(self, 'categories')
@@ -169,6 +231,55 @@ class ElasticsearchAsset(Document):
             return
 
         return list(roles)
+
+    def get_url(self) -> str:
+        """
+        Convert the path into a url where you can access the asset
+        """
+        if getattr(self, 'media_type','POSIX'):
+            return f'https://dap.ceda.ac.uk{self.location}'
+    
+    def get_size(self) -> int:
+
+        try:
+            return getattr(self, 'size')
+        except AttributeError:
+            return
+
+    def get_media_type(self) -> str:
+
+        try:
+            return getattr(self, 'media_type')
+        except AttributeError:
+            return
+
+    def get_filename(self) -> str:
+
+        try:
+            return getattr(self, 'filename')
+        except AttributeError:
+            return
+
+    def get_modified_time(self) -> str:
+
+        try:
+            return getattr(self, 'modified_time')
+        except AttributeError:
+            return
+
+    def get_magic_number(self) -> str:
+
+        try:
+            return getattr(self, 'magic_number')
+        except AttributeError:
+            return
+
+    def get_extension(self) -> str:
+
+        try:
+            return getattr(self, 'extension')
+        except AttributeError:
+            return
 
     def to_stac(self) -> Dict:
         """
@@ -179,7 +290,7 @@ class ElasticsearchAsset(Document):
             href=self.get_url(),
             type=getattr(self, 'magic_number', None),
             title=getattr(self, 'filename', None),
-            roles=self.get_roles()
+            roles=self.get_role()
         )
 
         return asset

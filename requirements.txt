@@ -18,12 +18,13 @@ six==1.16.0
 starlette==0.14.2
 git+https://github.com/cedadev/stac-free-text-ext
 git+https://github.com/cedadev/stac-context-collection-ext
+git+https://github.com/cedadev/stac-asset-search-ext
 stac-pydantic==2.0.0
 typing-extensions==3.10.0.0
 tzlocal==2.1
 urllib3==1.26.5
-git+https://github.com/rsmith013/pygeofilter@8052b05#egg=pygeofilter
-git+https://github.com/rsmith013/pygeofilter-elasticsearch#egg=pygeofilter_elasticsearch
+git+https://github.com/geopython/pygeofilter@v0.1.1#egg=pygeofilter
+git+https://github.com/cedadev/pygeofilter-elasticsearch#egg=pygeofilter_elasticsearch
 git+https://github.com/stac-utils/stac-fastapi@2.3.0#egg=stac_fastapi.api&subdirectory=stac_fastapi/api
 git+https://github.com/stac-utils/stac-fastapi@2.3.0#egg=stac_fastapi.extensions&subdirectory=stac_fastapi/extensions
 git+https://github.com/stac-utils/stac-fastapi@2.3.0#egg=stac_fastapi.types&subdirectory=stac_fastapi/types

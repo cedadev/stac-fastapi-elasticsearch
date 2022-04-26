@@ -74,6 +74,7 @@ class ItemSerializer(Serializer):
             id=db_model.meta.id,
             collection=db_model.get_collection_id(),
             bbox=db_model.get_bbox(),
+            geometry=None,
             properties=db_model.get_properties(),
             links=item_links,
             assets=db_model.get_stac_assets()
@@ -203,7 +204,7 @@ class AssetSerializer(Serializer):
             stac_version=getattr(db_model, 'stac_version', STAC_VERSION_DEFAULT),
             stac_extensions=stac_extensions,
             asset_id=db_model.meta.id,
-            role=db_model.get_role(),
+            roles=db_model.get_roles(),
             item=db_model.get_item_id(),
             bbox=db_model.get_bbox(),
             href=db_model.get_url(),
@@ -225,7 +226,7 @@ class AssetSerializer(Serializer):
     ) -> database.ElasticsearchAsset:
         db_item = database.ElasticsearchAsset(
             id=stac_data.get('id'),
-            role=stac_data.get('catagories'),
+            roles=stac_data.get('categories'),
             bbox=stac_data.get('bbox'),
             item_id=stac_data.get('item'),
             location=stac_data.get('location'),

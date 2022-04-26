@@ -158,11 +158,14 @@ class ElasticsearchItem(Document):
         """
 
         try:
-            coordinates = rgetattr(self, 'bbox.coordinates')
+            coordinates = rgetattr(self, 'spatial.bbox.coordinates')
         except AttributeError:
             return
 
         return Coordinates.from_geojson(coordinates).to_wgs84()
+
+    def get_geometry(self):
+        ...
 
     def get_collection_id(self) -> str:
         """
@@ -223,7 +226,7 @@ class ElasticsearchAsset(Document):
         except AttributeError:
             return
 
-    def get_role(self) -> Optional[List]:
+    def get_roles(self) -> Optional[List]:
 
         try:
             roles = getattr(self, 'categories')

@@ -148,6 +148,11 @@ class ElasticsearchItem(Document):
         except AttributeError:
             return {}
 
+        if not hasattr(self, 'datetime'):
+            if "start_datetime" not in properties or "end_datetime" not in properties:
+                properties["start_datetime"] = None
+                properties["end_datetime"] = None
+
         return properties.to_dict()
 
     def get_bbox(self):
@@ -293,7 +298,7 @@ class ElasticsearchAsset(Document):
             href=self.get_url(),
             type=getattr(self, 'magic_number', None),
             title=getattr(self, 'filename', None),
-            roles=self.get_role()
+            roles=self.get_roles()
         )
 
         return asset

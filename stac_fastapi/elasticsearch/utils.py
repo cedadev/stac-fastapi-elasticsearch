@@ -197,5 +197,16 @@ def get_queryset(client, table: "Document" , **kwargs) -> Search:
     if client.extension_is_enabled('ContextCollectionExtension'):
         if not collection_ids:
             qs.aggs.bucket('collections', 'terms', field='collection_id')
+    
+    if client.extension_is_enabled('SortExtension'):
+            sort_params = []
+            if sortby := kwargs.get('sortby'):
+                for s in sortby:
+                    if isinstance(s, str):
+                        s = s.lstrip('+')
+                    elif isinstance(s, dict):
+                        s = {{s['field']}:{"order":s['direction']}}
+                    sort_params.append(s)
+            qs = qs.sort(*sort_params)
 
     return qs

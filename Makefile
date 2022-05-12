@@ -22,7 +22,7 @@ docker-shell:
 
 .PHONY: test-elasticsearch
 test-elasticsearch: run-sample-elasticsearch
-	$(run_docker) /bin/bash -c './scripts/wait-for-it.sh database:9200 && cd /app/tests && pytest'
+	$(run_docker) /bin/bash -c './scripts/wait-for-it.sh database:9200 && cd /app/tests && pytest' 
 
 .PHONY: run-database
 run-database:

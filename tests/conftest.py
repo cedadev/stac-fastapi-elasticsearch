@@ -18,9 +18,11 @@ from stac_fastapi.extensions.core import (
     FieldsExtension,
     SortExtension,
     FilterExtension,
-    PaginationExtension
-
+    PaginationExtension,
+    TransactionExtension
 )
+
+from stac_fastapi.elasticsearch.transactions import TransactionsClient
 from stac_fastapi.elasticsearch.session import Session
 from stac_fastapi.elasticsearch.core import CoreCrudClient
 from stac_fastapi.elasticsearch.filters import FiltersClient
@@ -28,6 +30,11 @@ from stac_fastapi.elasticsearch.config import settings
 
 from stac_fastapi_freetext.free_text import FreeTextExtension
 from stac_fastapi_context_collections.context_collections import ContextCollectionExtension
+
+from stac_fastapi.elasticsearch.asset_search import AssetSearchClient
+from stac_fastapi_context_collections.context_collections import ContextCollectionExtension
+from stac_fastapi_asset_search.asset_search import AssetSearchExtension
+from stac_fastapi_asset_search.client import create_asset_search_get_request_model, create_asset_search_post_request_model
 
 
 @pytest.fixture
@@ -39,7 +46,8 @@ def extensions() -> List:
     FilterExtension(client=FiltersClient()),
     FreeTextExtension(),
     ContextCollectionExtension(),
-    PaginationExtension()
+    PaginationExtension(),
+    TransactionExtension(client=TransactionsClient(), settings=settings),
 ]
 
 
@@ -50,6 +58,14 @@ def db_session() -> Session:
 
 @pytest.fixture
 def api_client(db_session, extensions):
+    extensions.append(
+        AssetSearchExtension(
+            client=AssetSearchClient(extensions=extensions),
+            asset_search_get_request_model=create_asset_search_get_request_model(extensions),
+            asset_search_post_request_model=create_asset_search_post_request_model(extensions),
+            settings=settings
+        )
+    )
     return StacApi(
         settings=settings,
         extensions=extensions,

@@ -4,3 +4,4 @@
 venv
 stac_fastapi/elasticsearch/settings.py
 conf/settings.d/
+.vscode

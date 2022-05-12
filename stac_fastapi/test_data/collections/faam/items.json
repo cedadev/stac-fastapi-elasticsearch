@@ -1,0 +1,48 @@
+[
+  {
+    "_index" : "ceda-items-staging-2021-12-17",
+    "_type" : "_doc",
+    "_id" : "81420fb98d5c2bdd5814c5879543b300",
+    "_score" : 1.0,
+    "_source" : {
+      "item_id" : "81420fb98d5c2bdd5814c5879543b300",
+      "type" : "item",
+      "collection_id" : "d5337672a8ca3a389964454059767426",
+      "properties" : {
+        "source_classifier" : [
+          "undefined"
+        ],
+        "general_data_type" : [
+          "aircraft"
+        ],
+        "inspire_theme" : [
+          "Meteorological geographical features"
+        ],
+        "gemet_topic" : [
+          "Climatology, meteorology, atmosphere"
+        ],
+        "permitted_use" : [
+          "academic",
+          "commercial",
+          "educational",
+          "personal",
+          "policy",
+          "undefined"
+        ],
+        "platform" : [
+          "faam"
+        ],
+        "flight_number" : [
+          "b069"
+        ],
+        "datetime" : [
+          "2005-01-05T00:00:00"
+        ],
+        "description" : "This is a STAC item from the faam platform of flight b069",
+        "title" : "faam.b069",
+        "start_datetime" : "2005-01-05T00:00:00.000Z",
+        "end_datetime" : "2005-01-05T00:00:00.000Z"
+      }
+    }
+  }
+]

@@ -15,6 +15,7 @@ from urllib.error import HTTPError
 import starlette.requests
 from elasticsearch import NotFoundError
 from fastapi import Request, HTTPException
+from stac_fastapi.types.errors import ConflictError
 from stac_fastapi.types import stac as stac_types
 from stac_fastapi.types.core import BaseTransactionsClient
 
@@ -43,11 +44,20 @@ class TransactionsClient(BaseTransactionsClient):
         request: Request = kwargs['request']
         base_url = str(request.base_url)
         collection_id = str(request.path_params.get('collection_id'))
+        item_id = str(item.get('id'))
 
         try:
             ElasticsearchCollection.get(id=collection_id)
         except NotFoundError:
             raise NotFoundError(404, f'Collection: {collection_id} not found')
+
+        try:
+            db_item = ElasticsearchItem.get(id=item_id)
+        except NotFoundError:
+            db_item = None
+        
+        if db_item:
+            raise ConflictError(f'Item already exists.')
 
         db_item = ItemSerializer.stac_to_db(item)
         db_item.save()
@@ -55,7 +65,8 @@ class TransactionsClient(BaseTransactionsClient):
             for asset_id, asset in assets.items():
                 self.create_asset({asset_id: asset}, db_item.meta.id)
         item = ElasticsearchItem.get(id=db_item.meta.id)
-        return ItemSerializer.db_to_stac(item, base_url=base_url)
+        item = ItemSerializer.db_to_stac(item, base_url=base_url)
+        return item
 
     def update_item(self, item: stac_types.Item, **kwargs) -> stac_types.Item:
         """Perform a complete update on an existing item.
@@ -70,7 +81,7 @@ class TransactionsClient(BaseTransactionsClient):
         request: Request = kwargs['request']
         base_url = str(request.base_url)
         collection_id = str(request.path_params.get('collection_id'))
-        item_id = str(request.path_params.get('item_id'))
+        item_id = str(item.get('id'))
 
         try:
             ElasticsearchCollection.get(id=collection_id)
@@ -86,8 +97,8 @@ class TransactionsClient(BaseTransactionsClient):
             for asset_id, asset in old_item.get('assets').items():
                 self.delete_asset({asset_id: asset})
 
-        for asset_id, asset in item.get('assets').items():
-            self.create_asset({asset_id: asset}, item_db.meta.id)
+            for asset_id, asset in item.get('assets').items():
+                self.create_asset({asset_id: asset}, item_db.meta.id)
 
         item = ItemSerializer.stac_to_db(item)
         item_db.update(**item.to_dict())
@@ -137,6 +148,16 @@ class TransactionsClient(BaseTransactionsClient):
         Returns:
             The collection that was created.
         """
+        collection_id = str(collection.get('id'))
+
+        try:
+            db_collection = ElasticsearchCollection.get(id=collection_id)
+        except NotFoundError:
+            db_collection = None
+        
+        if db_collection:
+            raise ConflictError('Collection already exists.')
+
 
         # serialise collection, stac to db
         db_collection = CollectionSerializer.stac_to_db(collection)
@@ -157,7 +178,7 @@ class TransactionsClient(BaseTransactionsClient):
         """
         request: Request = kwargs['request']
         base_url = str(request.base_url)
-        collection_id = str(request.path_params.get('collection_id'))
+        collection_id = str(collection.get('id'))
 
         try:
             collection_db = ElasticsearchCollection.get(id=collection_id)
@@ -196,7 +217,7 @@ class TransactionsClient(BaseTransactionsClient):
 
         # remove collection from elasticsearch index
         items = ElasticsearchItem.search()
-        items = items.filter("term", collection_id__keyword=collection_db.meta.id)
+        items = items.filter("term", collection_id=collection_db.meta.id)
 
         for item in items:
             self.delete_item(item.meta.id, collection_id, request)

@@ -65,7 +65,7 @@ class Coordinates:
 
         [minLon, minLat, maxLon, maxLat]
         """
-
+        
         return [self.minlon, self.minlat, self.maxlon, self.maxlat]
 
     def to_geojson(self) -> List[List[NumType]]:

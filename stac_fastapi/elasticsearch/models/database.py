@@ -8,6 +8,8 @@ __copyright__ = 'Copyright 2018 United Kingdom Research and Innovation'
 __license__ = 'BSD - see LICENSE file in top-level package directory'
 __contact__ = 'richard.d.smith@stfc.ac.uk'
 
+from stac_fastapi.elasticsearch.config import settings
+
 from elasticsearch_dsl import Document, InnerDoc, Nested
 from elasticsearch_dsl import DateRange, GeoShape
 from .utils import Coordinates, rgetattr
@@ -244,8 +246,10 @@ class ElasticsearchAsset(Document):
         """
         Convert the path into a url where you can access the asset
         """
-        if getattr(self, 'media_type','POSIX'):
-            return f'https://dap.ceda.ac.uk{self.location}'
+        if getattr(self, 'media_type', 'POSIX') == 'POSIX':
+            return f'{settings.dap_url}{self.location}'
+        else:
+            return self.href
     
     def get_size(self) -> int:
 

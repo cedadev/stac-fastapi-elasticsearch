@@ -132,7 +132,6 @@ def get_queryset(client, table: "Document" , **kwargs) -> Search:
         
             # TODO: add in option for if item specifies start datetime and end datetime instead of datetime
             # should return items which cover a range that the specified datetime falls in
-            
 
     if limit := kwargs.get('limit'):
         if limit > 10000:
@@ -196,6 +195,6 @@ def get_queryset(client, table: "Document" , **kwargs) -> Search:
 
     if client.extension_is_enabled('ContextCollectionExtension'):
         if not collection_ids:
-            qs.aggs.bucket('collections', 'terms', field='collection_id')
+            qs.aggs.bucket('collections', 'terms', field='collection_id.keyword')
 
     return qs

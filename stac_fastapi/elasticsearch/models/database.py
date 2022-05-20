@@ -46,7 +46,7 @@ class ElasticsearchCollection(Document):
     def _matches(cls, hit):
         # override _matches to match indices in a pattern instead of just ALIAS
         # hit is the raw dict as returned by elasticsearch
-        return fnmatch(hit["_index"], cls._index._name + "*")
+        return True
 
     def get_summaries(self) -> Optional[Dict]:
         """
@@ -116,7 +116,7 @@ class ElasticsearchItem(Document):
     def _matches(cls, hit):
         # override _matches to match indices in a pattern instead of just ALIAS
         # hit is the raw dict as returned by elasticsearch
-        return fnmatch(hit["_index"], cls._index._name + "*")
+        return True
 
     def search_assets(self):
         s = ElasticsearchAsset.search()
@@ -189,7 +189,7 @@ class ElasticsearchAsset(Document):
     @classmethod
     def _matches(cls, hit):
         # override _matches to match indices in a pattern instead of just ALIAS
-        return fnmatch(hit["_index"], cls._index._name + "*")
+        return True
 
     def get_properties(self) -> Dict:
 

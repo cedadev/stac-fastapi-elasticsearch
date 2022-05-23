@@ -4,8 +4,10 @@
         "extent" : {
           "properties" : {
             "spatial" : {
-              "bbox": {
-                "type" : "geo_shape"
+              "properties" : {
+                "bbox": {
+                  "type" : "geo_shape"
+                }
               }
             },
             "temporal" : {

@@ -8,6 +8,8 @@ __copyright__ = 'Copyright 2018 United Kingdom Research and Innovation'
 __license__ = 'BSD - see LICENSE file in top-level package directory'
 __contact__ = 'richard.d.smith@stfc.ac.uk'
 
+from stac_fastapi.elasticsearch.config import settings
+
 from elasticsearch_dsl import Document, InnerDoc, Nested
 from elasticsearch_dsl import DateRange, GeoShape
 from .utils import Coordinates, rgetattr
@@ -148,6 +150,11 @@ class ElasticsearchItem(Document):
         except AttributeError:
             return {}
 
+        if not hasattr(self, 'datetime'):
+            if "start_datetime" not in properties or "end_datetime" not in properties:
+                properties["start_datetime"] = None
+                properties["end_datetime"] = None
+
         return properties.to_dict()
 
     def get_bbox(self):
@@ -158,11 +165,14 @@ class ElasticsearchItem(Document):
         """
 
         try:
-            coordinates = rgetattr(self, 'bbox.coordinates')
+            coordinates = rgetattr(self, 'spatial.bbox.coordinates')
         except AttributeError:
             return
 
         return Coordinates.from_geojson(coordinates).to_wgs84()
+
+    def get_geometry(self):
+        ...
 
     def get_collection_id(self) -> str:
         """
@@ -223,7 +233,7 @@ class ElasticsearchAsset(Document):
         except AttributeError:
             return
 
-    def get_role(self) -> Optional[List]:
+    def get_roles(self) -> Optional[List]:
 
         try:
             roles = getattr(self, 'categories')
@@ -236,8 +246,10 @@ class ElasticsearchAsset(Document):
         """
         Convert the path into a url where you can access the asset
         """
-        if getattr(self, 'media_type','POSIX'):
-            return f'https://dap.ceda.ac.uk{self.location}'
+        if getattr(self, 'media_type', 'POSIX') == 'POSIX':
+            return f'{settings.posix_download_url}{self.location}'
+        else:
+            return self.href
     
     def get_size(self) -> int:
 
@@ -290,7 +302,7 @@ class ElasticsearchAsset(Document):
             href=self.get_url(),
             type=getattr(self, 'magic_number', None),
             title=getattr(self, 'filename', None),
-            roles=self.get_role()
+            roles=self.get_roles()
         )
 
         return asset

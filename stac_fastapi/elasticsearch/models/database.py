@@ -247,7 +247,7 @@ class ElasticsearchAsset(Document):
         Convert the path into a url where you can access the asset
         """
         if getattr(self, 'media_type', 'POSIX') == 'POSIX':
-            return f'{settings.dap_url}{self.location}'
+            return f'{settings.posix_download_url}{self.location}'
         else:
             return self.href
     

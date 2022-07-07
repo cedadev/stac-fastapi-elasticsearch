@@ -27,10 +27,7 @@ from fastapi import HTTPException
 # Typing imports
 from elasticsearch_dsl.search import Search, Q
 from elasticsearch_dsl.query import QueryString
-from typing import TYPE_CHECKING
-
-if TYPE_CHECKING:
-    from elasticsearch_dsl import Document
+from elasticsearch_dsl import Document
 
 
 def dict_merge(*args, add_keys=True) -> dict:
@@ -72,7 +69,7 @@ def dict_merge(*args, add_keys=True) -> dict:
     return rtn_dct
 
 
-def get_queryset(client, table: "Document", **kwargs) -> Search:
+def get_queryset(client, table: Document, **kwargs) -> Search:
     """
     Turn the query into an `elasticsearch_dsl.Search object <https://elasticsearch-dsl.readthedocs.io/en/latest/api.html#search>`_
     :param client: The client class
@@ -109,8 +106,9 @@ def get_queryset(client, table: "Document", **kwargs) -> Search:
         )
 
     if bbox := kwargs.get('bbox'):
+        bbox = [float(x) for x in bbox]
         filter_queries.append(
-            Q('geo_shape', spatial_bbox={
+            Q('geo_shape', spatial__bbox={
                 'shape': {
                     'type': 'envelope',
                     'coordinates': Coordinates.from_wgs84(bbox).to_geojson()
@@ -198,6 +196,7 @@ def get_queryset(client, table: "Document", **kwargs) -> Search:
                 ast = parse_json(qfilter)
 
             try:
+                # TODO: Add support beyond just keyword for boolean and integer filtering.
                 qfilter = to_filter(
                     ast,
                     field_mapping,
@@ -231,4 +230,9 @@ def get_queryset(client, table: "Document", **kwargs) -> Search:
         Q('bool', should=should_queries),
         Q('bool', filter=filter_queries)
     ]))
+
+    # TODO: when fields extension is added, exchange this for kwargs.get('fields')
+    if source := kwargs.get('request').query_params.getlist(key='source'):
+        qs = qs.source(includes=source)
+
     return qs

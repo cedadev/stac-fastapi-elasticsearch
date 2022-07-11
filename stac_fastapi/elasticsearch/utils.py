@@ -8,7 +8,6 @@ __copyright__ = 'Copyright 2018 United Kingdom Research and Innovation'
 __license__ = 'BSD - see LICENSE file in top-level package directory'
 __contact__ = 'richard.d.smith@stfc.ac.uk'
 
-
 # Python imports
 import collections
 from string import Template
@@ -26,12 +25,9 @@ from pygeofilter_elasticsearch import to_filter
 from fastapi import HTTPException
 
 # Typing imports
-from elasticsearch_dsl.search import Search
+from elasticsearch_dsl.search import Search, Q
 from elasticsearch_dsl.query import QueryString
-from typing import TYPE_CHECKING
-
-if TYPE_CHECKING:
-    from elasticsearch_dsl import Document
+from elasticsearch_dsl import Document
 
 
 def dict_merge(*args, add_keys=True) -> dict:
@@ -55,7 +51,8 @@ def dict_merge(*args, add_keys=True) -> dict:
 
             # This is an existing key with mismatched types
             elif k in rtn_dct and type(v) != type(rtn_dct[k]):
-                raise TypeError(f"Overlapping keys exist with different types: original is {type(rtn_dct[k])}, new value is {type(v)}")
+                raise TypeError(
+                    f"Overlapping keys exist with different types: original is {type(rtn_dct[k])}, new value is {type(v)}")
 
             # Recursive merge the next level
             elif isinstance(rtn_dct[k], dict) and isinstance(merge_dct[k], collections.abc.Mapping):
@@ -72,7 +69,7 @@ def dict_merge(*args, add_keys=True) -> dict:
     return rtn_dct
 
 
-def get_queryset(client, table: "Document" , **kwargs) -> Search:
+def get_queryset(client, table: Document, **kwargs) -> Search:
     """
     Turn the query into an `elasticsearch_dsl.Search object <https://elasticsearch-dsl.readthedocs.io/en/latest/api.html#search>`_
     :param client: The client class
@@ -83,31 +80,42 @@ def get_queryset(client, table: "Document" , **kwargs) -> Search:
 
     qs = table.search()
 
+    # Query list for must match queries. Equivalent to a logical AND.
+    filter_queries = []
+
+    # Query list for should queries. Equivalent to a logical OR.
+    should_queries = []
+
     if asset_ids := kwargs.get('asset_ids'):
-        qs = qs.filter('terms', asset_id=asset_ids)
+        filter_queries.append(Q('terms', asset_id=asset_ids))
 
     if item_ids := kwargs.get('item_ids'):
-        qs = qs.filter('terms', item_id=item_ids)
+        filter_queries.append(Q('terms', item_id=item_ids))
 
     if collection_ids := kwargs.get('collection_ids'):
-        qs = qs.filter('terms', collection_id=collection_ids)
+        filter_queries.append(Q('terms', collection_id=collection_ids))
 
     if intersects := kwargs.get('intersects'):
-        qs = qs.filter('geo_shape', geometry={
-            'shape': {
-                'type': intersects.get('type'),
-                'coordinates': intersects.get('coordinates')
-            }
-        })
+        filter_queries.append(
+            Q('geo_shape', geometry={
+                'shape': {
+                    'type': intersects.get('type'),
+                    'coordinates': intersects.get('coordinates')
+                }
+            })
+        )
 
     if bbox := kwargs.get('bbox'):
-        qs = qs.filter('geo_shape', spatial_bbox={
-            'shape': {
-                'type': 'envelope',
-                'coordinates': Coordinates.from_wgs84(bbox).to_geojson()
-            }
-        })
-    
+        bbox = [float(x) for x in bbox]
+        filter_queries.append(
+            Q('geo_shape', spatial__bbox={
+                'shape': {
+                    'type': 'envelope',
+                    'coordinates': Coordinates.from_wgs84(bbox).to_geojson()
+                }
+            })
+        )
+
     if datetime := kwargs.get('datetime'):
         # currently based on datetime being provided in item
         # if a date range, get start and end datetimes and find any items with dates in this range
@@ -118,20 +126,40 @@ def get_queryset(client, table: "Document" , **kwargs) -> Search:
             start_date = split[0]
             end_date = split[1]
 
-            if start_date != '..':
-                qs = qs.filter('range', properties__datetime={'gte': start_date})
+            # given an end and start date, the start_datetime, end_datetime and datetime should fall within the range.
+            if start_date != '..' and end_date == '..':
+                should_queries.extend([
+                    Q('range', properties__datetime={'gte': start_date}),
+                    Q('range', properties__start_datetime={'gte': start_date})
+                ])
 
-            if end_date != '..':
-                qs = qs.filter('range', properties__datetime={'lte': end_date})
+            elif end_date != '..' and start_date == '..':
+                should_queries.extend([
+                    Q('range', properties__datetime={'lte': end_date}),
+                    Q('range', properties__end_datetime={'lte': end_date})
+                ])
 
-            # TODO: add in option that searches start and end datetime if datetime is null in item
+            elif end_date != '..' and start_date != '..':
+                should_queries.extend([
+                    Q('bool', filter=[
+                        Q('range', properties__datetime={'gte': start_date}),
+                        Q('range', properties__datetime={'lte': end_date})
+                    ]),
+                    Q('bool', filter=[
+                        Q('range', properties__start_datetime={'gte': start_date}),
+                        Q('range', properties__end_datetime={'lte': end_date})
+                    ])
+                ])
 
         else:
-
-            qs = qs.filter('match', properties__datetime=kwargs.get('datetime'))
-        
-            # TODO: add in option for if item specifies start datetime and end datetime instead of datetime
-            # should return items which cover a range that the specified datetime falls in
+            # Given a single datetime, datetime should match properties.datetime OR is within start AND end datetime
+            should_queries.extend([
+                Q('match', properties__datetime=kwargs.get('datetime')),
+                Q('bool', filter=[
+                    Q('range', properties__start_datetime={'lte': kwargs.get('datetime')}),
+                    Q('range', properties__end_datetime={'gte': kwargs.get('datetime')})
+                ])
+            ])
 
     if limit := kwargs.get('limit'):
         if limit > 10000:
@@ -147,7 +175,7 @@ def get_queryset(client, table: "Document" , **kwargs) -> Search:
         qs = qs[(page - 1) * limit:page * limit]
 
     if role := kwargs.get('role'):
-        qs = qs.filter('terms', categories=role)
+        filter_queries.append(Q('terms', categories=role))
 
     if client.extension_is_enabled('FilterExtension'):
 
@@ -168,6 +196,7 @@ def get_queryset(client, table: "Document" , **kwargs) -> Search:
                 ast = parse_json(qfilter)
 
             try:
+                # TODO: Add support beyond just keyword for boolean and integer filtering.
                 qfilter = to_filter(
                     ast,
                     field_mapping,
@@ -196,5 +225,14 @@ def get_queryset(client, table: "Document" , **kwargs) -> Search:
     if client.extension_is_enabled('ContextCollectionExtension'):
         if not collection_ids:
             qs.aggs.bucket('collections', 'terms', field='collection_id.keyword')
+
+    qs = qs.query(Q('bool', must=[
+        Q('bool', should=should_queries),
+        Q('bool', filter=filter_queries)
+    ]))
+
+    if client.extension_is_enabled('FieldsExtension'):
+        if fields := kwargs.get('fields'):
+            qs = qs.source(include=fields)
 
     return qs

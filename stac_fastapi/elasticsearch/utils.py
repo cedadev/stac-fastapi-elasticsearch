@@ -231,8 +231,8 @@ def get_queryset(client, table: Document, **kwargs) -> Search:
         Q('bool', filter=filter_queries)
     ]))
 
-    # TODO: when fields extension is added, exchange this for kwargs.get('fields')
-    if source := kwargs.get('request').query_params.getlist(key='source'):
-        qs = qs.source(includes=source)
+    if client.extension_is_enabled('FieldsExtension'):
+        if fields := kwargs.get('fields'):
+            qs = qs.source(include=fields)
 
     return qs

@@ -195,7 +195,7 @@ def get_queryset(client, table: Document, **kwargs) -> Search:
                     ]
                 )
 
-        if match := re.match("(?P<date>[-\d]+)T(?P<time>[:.\d]+)[Z]?", datetime):
+        elif match := re.match("(?P<date>[-\d]+)T(?P<time>[:.\d]+)[Z]?", datetime):
             should_queries.extend(
                 [
                     Q("match", properties__datetime=datetime),
@@ -209,7 +209,7 @@ def get_queryset(client, table: Document, **kwargs) -> Search:
                 ]
             )
 
-        if match := re.match(
+        elif match := re.match(
             "(?P<year>\d{2,4})[-/.](?P<month>\d{1,2})[-/.](?P<day>\d{1,2})", datetime
         ):
             should_queries.extend(

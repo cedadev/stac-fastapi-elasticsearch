@@ -135,7 +135,7 @@ def get_queryset(client, table: Document, **kwargs) -> Search:
         # .. identifies an open date range
         # if one datetime, find any items with dates that this intersects
         if match := re.match(
-            "(?P<start_datetime>[^]+)/(?P<end_datetime>[^]+)", datetime
+            "(?P<start_datetime>[\S]+)/(?P<end_datetime>[\S]+)", datetime
         ):
             start_date = match.group("start_datetime")
             end_date = match.group("end_datetime")
@@ -195,7 +195,7 @@ def get_queryset(client, table: Document, **kwargs) -> Search:
                     ]
                 )
 
-        if match := re.match("(?P<date>[^]+)T(?P<time>[^]+)[Z]?", datetime):
+        if match := re.match("(?P<date>[-\d]+)T(?P<time>[:.\d]+)[Z]?", datetime):
             should_queries.extend(
                 [
                     Q("match", properties__datetime=datetime),

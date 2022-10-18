@@ -11,7 +11,7 @@ __contact__ = 'richard.d.smith@stfc.ac.uk'
 from stac_fastapi.api.app import StacApi
 from stac_fastapi.extensions.core import (
     ContextExtension,
-    # FieldsExtension,
+    FieldsExtension,
     # SortExtension,
     FilterExtension,
     PaginationExtension,
@@ -34,7 +34,7 @@ from stac_fastapi_asset_search.client import create_asset_search_get_request_mod
 
 extensions = [
     ContextExtension(),
-    # FieldsExtension(),
+    FieldsExtension(),
     # SortExtension(),
     FilterExtension(client=FiltersClient()),
     FreeTextExtension(),

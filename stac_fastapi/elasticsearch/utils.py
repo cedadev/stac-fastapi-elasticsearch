@@ -320,6 +320,16 @@ def get_queryset(client, table: Document, **kwargs) -> Search:
 
     if client.extension_is_enabled("FieldsExtension"):
         if fields := kwargs.get("fields"):
-            qs = qs.source(include=fields)
+
+            if isinstance(fields, list):
+                qs = qs.source(include=fields)
+
+            elif isinstance(fields, dict):
+
+                if include := fields.get("include"):
+                    qs = qs.source(include=list(include))
+
+                if exclude := fields.get("exclude"):
+                    qs = qs.source(excludes=list(exclude))
 
     return qs

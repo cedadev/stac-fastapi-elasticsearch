@@ -303,9 +303,7 @@ def get_queryset(client, table: Document, **kwargs) -> Search:
 
     if client.extension_is_enabled("FreeTextExtension"):
         if q := kwargs.get("q"):
-            qs = qs.query(
-                QueryString(query=q, default_field="properties.*", lenient=True)
-            )
+            qs = qs.query(QueryString(query=q, fields=["properties.*"], lenient=True))
 
     if client.extension_is_enabled("ContextCollectionExtension"):
         if (

@@ -249,10 +249,10 @@ class CoreCrudClient(BaseCoreClient):
         request = kwargs["request"]
 
         response = []
-        for collection in self.collection_table.search()
-            response.append(serializers.CollectionSerializer.db_to_stac(
-                collection, request
-            ))
+        for collection in self.collection_table.search():
+            response.append(
+                serializers.CollectionSerializer.db_to_stac(collection, request)
+            )
 
         links = [
             {

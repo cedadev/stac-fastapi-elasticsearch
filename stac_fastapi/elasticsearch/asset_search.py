@@ -11,7 +11,7 @@ __contact__ = "rhys.r.evans@stfc.ac.uk"
 import logging
 
 # Python imports
-from datetime import datetime
+from datetime import datetime as datetime_type
 
 # Typing imports
 from typing import List, Optional, Type, Union
@@ -99,7 +99,7 @@ class AssetSearchClient(BaseAssetSearchClient):
         ids: Optional[List[str]] = None,
         items: Optional[List[str]] = None,
         bbox: Optional[List[NumType]] = None,
-        datetime: Optional[Union[str, datetime]] = None,
+        datetime: Optional[Union[str, datetime_type]] = None,
         role: Optional[List[str]] = None,
         limit: Optional[int] = 10,
         **kwargs,

@@ -182,9 +182,6 @@ class ElasticsearchItem(STACDocument):
             .filter("term", item_id=self.meta.id)
         )
 
-        if self.extension_is_enabled("ContextCollectionExtension"):
-            asset_search = asset_search.exclude("term", properties__categories="data")
-
         return asset_search
 
     @property
@@ -192,6 +189,9 @@ class ElasticsearchItem(STACDocument):
         """
         Return elasticsearch assets
         """
+        if self.extension_is_enabled("ContextCollectionExtension"):
+            return []
+
         return list(self.asset_search().scan())
 
     def get_stac_assets(self) -> dict:

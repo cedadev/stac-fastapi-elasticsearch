@@ -8,7 +8,7 @@ __copyright__ = "Copyright 2018 United Kingdom Research and Innovation"
 __license__ = "BSD - see LICENSE file in top-level package directory"
 __contact__ = "richard.d.smith@stfc.ac.uk"
 
-from typing import Dict, Optional
+from typing import Optional
 from urllib.parse import urljoin
 
 from elasticsearch_dsl import DateRange, Document, GeoShape, Index, InnerDoc
@@ -279,7 +279,7 @@ class ElasticsearchCollection(STACDocument):
         # hit is the raw dict as returned by elasticsearch
         return True
 
-    def get_summaries(self) -> Optional[Dict]:
+    def get_summaries(self) -> Optional[dict]:
         """
         Turns the elastic-dsl AttrDict into a dict or None
 
@@ -288,7 +288,7 @@ class ElasticsearchCollection(STACDocument):
 
         return properties.to_dict() if not isinstance(properties, dict) else {}
 
-    def get_extent(self) -> Dict:
+    def get_extent(self) -> dict:
         """
         Takes the elastic-dsl Document and extracts the
         extent information from it.

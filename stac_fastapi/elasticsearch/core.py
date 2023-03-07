@@ -14,7 +14,7 @@ import logging
 from datetime import datetime
 
 # Typing imports
-from typing import Dict, List, Optional, Type, Union
+from typing import List, Optional, Type, Union
 from urllib.parse import urljoin
 
 # Third-party imports
@@ -238,7 +238,7 @@ class CoreCrudClient(BaseCoreClient):
 
         return self.item_serializer.db_to_stac(item, request)
 
-    def all_collections(self, **kwargs) -> Dict:
+    def all_collections(self, **kwargs) -> dict:
         """Get all available collections.
 
         Called with `GET /collections`.

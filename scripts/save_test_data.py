@@ -10,7 +10,7 @@ import yaml
 
 
 workingdir = Path(__file__).parent.absolute()
-data_dir = workingdir.parent / "stac_fastapi" / "test_data"
+data_dir = workingdir.parent / "stac_fastapi" / "test_data" / "collections"
 
 def get_paths_list():
     paths = []
@@ -43,7 +43,7 @@ def get_results_list(query_method, ids):
     for i in ids:
         s = query_method(i)
         response = s.execute()
-        results += [h.to_dict() for h in response.hits]
+        results += [h.to_dict() for h in response['hits']['hits']]
 
     return results
 
@@ -58,12 +58,12 @@ def main():
     with open(data_dir / 'assets.json', 'w') as f:
         json.dump(assets, f)
     
-    item_ids = set([a['item_id'] for a in assets])
+    item_ids = set([a['_source']['item_id'] for a in assets])
     items = get_results_list(get_query_from_item_id, item_ids)
     with open(data_dir / 'items.json', 'w') as f:
         json.dump(items, f)
 
-    collection_ids = set([i['collection_id'] for i in items])
+    collection_ids = set([i['_source']['collection_id'] for i in items])
     collections = get_results_list(get_query_from_col_id, collection_ids)
     with open(data_dir / 'collections.json', 'w') as f:
         json.dump(collections, f)

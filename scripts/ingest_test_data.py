@@ -29,14 +29,14 @@ def parse_args():
 
 
 def read_json(path, object_type):
-    with open(os.path.join(path, f"{object_type}s.json"), encoding="utf-8") as reader:
+    with open(os.path.join(path, object_type), encoding="utf-8") as reader:
         return json.load(reader)
 
 
 def load_mappings(path, es_host, object_types):
 
     for object_type in object_types:
-        map = read_json(path, f"{object_type}s.json")
+        map = read_json(path, f"{object_type}_mapping.json")
 
         index_name = f"stac-{object_type}s"
         if not es_host.indices.exists(index_name):
@@ -62,10 +62,9 @@ def main():
     es = Elasticsearch(args.host)
     load_mappings(os.path.join(data_dir, "mappings"), es, object_types)
 
-    collections = os.listdir(os.path.join(data_dir, "collections"))
-    for collection in collections:
-        path = os.path.join(data_dir, "collections", collection)
-        load_data(path, es, object_types)
+    
+    path = os.path.join(data_dir, "collections")
+    load_data(path, es, object_types)
 
 
 if __name__ == "__main__":

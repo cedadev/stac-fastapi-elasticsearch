@@ -71,3 +71,12 @@ api = StacApi(
 )
 
 app = api.app
+
+
+def set_sub_api(prefix):
+    app.mount(f"/{prefix}", app)
+
+
+if len(settings.CATALOGS) > 1:
+    for catalog in settings.CATALOGS.keys():
+        set_sub_api(catalog)

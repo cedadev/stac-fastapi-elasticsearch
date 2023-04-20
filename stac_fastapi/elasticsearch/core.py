@@ -8,6 +8,7 @@ __copyright__ = "Copyright 2018 United Kingdom Research and Innovation"
 __license__ = "BSD - see LICENSE file in top-level package directory"
 __contact__ = "richard.d.smith@stfc.ac.uk"
 
+import json
 import logging
 
 # Python imports
@@ -30,6 +31,7 @@ from stac_pydantic.links import Relations
 
 # Stac pydantic imports
 from stac_pydantic.shared import MimeTypes
+from starlette.requests import Request as StarletteRequest
 
 from stac_fastapi.elasticsearch.context import generate_context
 from stac_fastapi.elasticsearch.models import database, serializers
@@ -74,7 +76,10 @@ class CoreCrudClient(BaseCoreClient):
         return stac_types.Conformance(conformsTo=self.list_conformance_classes())
 
     def post_search(
-        self, search_request: Type[BaseSearchPostRequest], **kwargs
+        self,
+        request: StarletteRequest,
+        search_request: Type[BaseSearchPostRequest],
+        **kwargs,
     ) -> stac_types.ItemCollection:
         """Cross catalog search (POST).
 
@@ -92,11 +97,12 @@ class CoreCrudClient(BaseCoreClient):
         request_dict["item_ids"] = request_dict.pop("ids")
         request_dict["collection_ids"] = request_dict.pop("collections")
 
-        items = get_queryset(self, self.item_table, **request_dict)
+        items = get_queryset(
+            self, self.item_table, catalog=request.get("root_path"), **request_dict
+        )
         result_count = items.count()
 
         response = []
-        request = kwargs["request"]
 
         for item in items.execute():
             response.append(self.item_serializer.db_to_stac(item, request))
@@ -137,6 +143,7 @@ class CoreCrudClient(BaseCoreClient):
 
     def get_search(
         self,
+        request: StarletteRequest,
         collections: Optional[List[str]] = None,
         ids: Optional[List[str]] = None,
         bbox: Optional[List[NumType]] = None,
@@ -164,11 +171,12 @@ class CoreCrudClient(BaseCoreClient):
         if "filter-lang" not in search.keys():
             search["filter-lang"] = "cql-text"
 
-        items = get_queryset(self, self.item_table, **search)
+        items = get_queryset(
+            self, self.item_table, catalog=request.get("root_path").strip("/"), **search
+        )
         result_count = items.count()
 
         response = []
-        request = kwargs["request"]
 
         for item in items.execute():
             response.append(self.item_serializer.db_to_stac(item, request))
@@ -205,7 +213,9 @@ class CoreCrudClient(BaseCoreClient):
 
         return item_collection
 
-    def get_item(self, item_id: str, collection_id: str, **kwargs) -> stac_types.Item:
+    def get_item(
+        self, request: StarletteRequest, item_id: str, collection_id: str, **kwargs
+    ) -> stac_types.Item:
         """Get item by id.
 
         Called with `GET /collections/{collection_id}/items/{item_id}`.
@@ -234,11 +244,9 @@ class CoreCrudClient(BaseCoreClient):
                 )
             )
 
-        request = kwargs["request"]
-
         return self.item_serializer.db_to_stac(item, request)
 
-    def all_collections(self, **kwargs) -> dict:
+    def all_collections(self, request: StarletteRequest, **kwargs) -> dict:
         """Get all available collections.
 
         Called with `GET /collections`.
@@ -246,9 +254,9 @@ class CoreCrudClient(BaseCoreClient):
         Returns:
             A list of collections.
         """
-        request = kwargs["request"]
 
         response = []
+
         for collection in self.collection_table.search():
             response.append(
                 serializers.CollectionSerializer.db_to_stac(collection, request)
@@ -272,7 +280,9 @@ class CoreCrudClient(BaseCoreClient):
             "links": links,
         }
 
-    def get_collection(self, collection_id: str, **kwargs) -> stac_types.Collection:
+    def get_collection(
+        self, request: StarletteRequest, collection_id: str, **kwargs
+    ) -> stac_types.Collection:
         """Get collection by id.
 
         Called with `GET /collections/{collection_id}`.
@@ -287,8 +297,6 @@ class CoreCrudClient(BaseCoreClient):
             collection = self.collection_table.get(id=collection_id)
         except NotFoundError:
             raise (NotFoundError(404, f"Collection: {collection_id} not found"))
-
-        request = kwargs["request"]
 
         collection = serializers.CollectionSerializer.db_to_stac(collection, request)
 
@@ -307,7 +315,7 @@ class CoreCrudClient(BaseCoreClient):
         return collection
 
     def item_collection(
-        self, collection_id: str, limit: int = 10, **kwargs
+        self, request: StarletteRequest, collection_id: str, limit: int = 10, **kwargs
     ) -> stac_types.ItemCollection:
         """Get all items from a specific collection.
 
@@ -321,7 +329,7 @@ class CoreCrudClient(BaseCoreClient):
         Returns:
             An ItemCollection.
         """
-        query_params = dict(kwargs["request"].query_params)
+        query_params = dict(request.query_params)
         page = int(query_params.get("page", "1"))
         limit = int(query_params.get("limit", "10"))
 
@@ -333,8 +341,6 @@ class CoreCrudClient(BaseCoreClient):
         # TODO: support filter parameter https://portal.ogc.org/files/96288#filter-param
 
         response = []
-
-        request = kwargs["request"]
 
         for item in items:
             response.append(self.item_serializer.db_to_stac(item, request))

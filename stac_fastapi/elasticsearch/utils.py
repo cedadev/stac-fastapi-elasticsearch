@@ -76,7 +76,7 @@ def dict_merge(*args, add_keys=True) -> dict:
     return rtn_dct
 
 
-def get_queryset(client, table: Document, **kwargs) -> Search:
+def get_queryset(client, table: Document, catalog: str = "", **kwargs) -> Search:
     """
     Turn the query into an `elasticsearch_dsl.Search object <https://elasticsearch-dsl.readthedocs.io/en/latest/api.html#search>`_
     :param client: The client class
@@ -85,7 +85,7 @@ def get_queryset(client, table: Document, **kwargs) -> Search:
     :return: `elasticsearch_dsl.Search object <https://elasticsearch-dsl.readthedocs.io/en/latest/api.html#search>`
     """
 
-    qs = table.search()
+    qs = table.search(catalog=catalog)
 
     # Query list for must match queries. Equivalent to a logical AND.
     filter_queries = []

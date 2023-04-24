@@ -6,7 +6,7 @@ click==8.0.1
 dateparser==1.0.0
 elasticsearch==7.13.1
 elasticsearch-dsl==7.3.0
-fastapi==0.67.0
+fastapi==0.73.0
 geojson-pydantic==0.3.0
 lark==0.11.3
 pydantic==1.8.2
@@ -20,6 +20,8 @@ git+https://github.com/cedadev/stac-free-text-ext
 git+https://github.com/cedadev/stac-context-collection-ext
 git+https://github.com/cedadev/stac-asset-search-ext
 stac-pydantic==2.0.0
+pystac==1.7.2
+iso8601==1.0.2
 typing-extensions==3.10.0.0
 tzlocal==2.1
 urllib3==1.26.5

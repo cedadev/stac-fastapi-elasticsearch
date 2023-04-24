@@ -36,11 +36,11 @@ def read_json(path, object_type):
 def load_mappings(path, es_host, object_types):
 
     for object_type in object_types:
-        map = read_json(path, f"{object_type}s.json")
+        data = read_json(path, f"{object_type}s.json")
 
         index_name = f"stac-{object_type}s"
         if not es_host.indices.exists(index_name):
-            es_host.indices.create(index_name, body=map)
+            es_host.indices.create(index_name, body=data)
 
 
 def load_data(path, es_host, object_types):

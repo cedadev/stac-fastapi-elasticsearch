@@ -1,3 +1,4 @@
+anyio==3.6.2
 attrs==21.2.0
 Brotli==1.0.9
 brotli-asgi==1.1.0
@@ -8,10 +9,12 @@ elasticsearch==7.13.1
 elasticsearch-dsl==7.3.0
 fastapi==0.73.0
 geojson-pydantic==0.3.0
+iso8601==1.0.2
 lark==0.11.3
 pydantic==1.8.2
 python-dateutil==2.8.1
 pygeoif==0.7
+pystac==1.7.2
 pytz==2021.1
 regex==2021.7.6
 six==1.16.0
@@ -20,8 +23,6 @@ git+https://github.com/cedadev/stac-free-text-ext
 git+https://github.com/cedadev/stac-context-collection-ext
 git+https://github.com/cedadev/stac-asset-search-ext
 stac-pydantic==2.0.0
-pystac==1.7.2
-iso8601==1.0.2
 typing-extensions==3.10.0.0
 tzlocal==2.1
 urllib3==1.26.5

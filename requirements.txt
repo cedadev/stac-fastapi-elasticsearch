@@ -18,7 +18,7 @@ pystac==1.7.2
 pytz==2021.1
 regex==2021.7.6
 six==1.16.0
-starlette==0.14.2
+starlette==0.17.1
 git+https://github.com/cedadev/stac-free-text-ext
 git+https://github.com/cedadev/stac-context-collection-ext
 git+https://github.com/cedadev/stac-asset-search-ext

@@ -8,15 +8,15 @@ __copyright__ = "Copyright 2018 United Kingdom Research and Innovation"
 __license__ = "BSD - see LICENSE file in top-level package directory"
 __contact__ = "richard.d.smith@stfc.ac.uk"
 
+from fastapi.middleware.gzip import GZipMiddleware
 from stac_fastapi.api.app import StacApi
+from stac_fastapi.api.middleware import CORSMiddleware, ProxyHeaderMiddleware
 from stac_fastapi.api.models import create_get_request_model, create_post_request_model
-from stac_fastapi.extensions.core import (
+from stac_fastapi.extensions.core import (  # SortExtension,; TransactionExtension,
     ContextExtension,
     FieldsExtension,
     FilterExtension,
     PaginationExtension,
-    SortExtension,
-    TransactionExtension,
 )
 from stac_fastapi_asset_search.asset_search import AssetSearchExtension
 from stac_fastapi_asset_search.client import (
@@ -68,6 +68,8 @@ api = StacApi(
     title=settings.STAC_TITLE,
     search_get_request_model=create_get_request_model(extensions),
     search_post_request_model=create_post_request_model(extensions),
+    # Overriding middlewares until BrotliMiddleware pull request is merged
+    middlewares=[CORSMiddleware, ProxyHeaderMiddleware, GZipMiddleware],
 )
 
 app = api.app

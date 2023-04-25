@@ -15,6 +15,7 @@ import elasticsearch_dsl
 from dateutil import parser
 from requests.models import Response
 from stac_fastapi.types import stac as stac_types
+from stac_fastapi.types.links import ItemLinks
 from stac_fastapi_asset_search.types import Asset
 
 from stac_fastapi.elasticsearch.models import database
@@ -98,6 +99,26 @@ class ItemSerializer(Serializer):
     def db_to_stac(
         cls, db_model: database.ElasticsearchItem, request: Response
     ) -> stac_types.Item:
+        # Added for different mappings
+        if not isinstance(db_model, database.ElasticsearchItem):
+            item = database.ElasticsearchItem()
+            db_model = db_model.to_dict()
+            return stac_types.Item(
+                type="Feature",
+                stac_version=item.get_stac_version(),
+                stac_extensions=item.get_stac_extensions(),
+                id=getattr(db_model, "item_id", ""),
+                collection=getattr(db_model, "collection_id", ""),
+                bbox=None,
+                geometry=None,
+                properties=getattr(db_model, "properties", {}),
+                links=ItemLinks(
+                    base_url=str(request.base_url),
+                    collection_id=getattr(db_model, "collection_id", ""),
+                    item_id=getattr(db_model, "item_id", ""),
+                ).create_links(),
+                assets={},
+            )
 
         return stac_types.Item(
             type="Feature",

@@ -43,6 +43,9 @@ def get_results_list(query_method, ids):
     for i in ids:
         s = query_method(i)
         response = s.execute()
+        if query_method == get_query_from_path:
+            print(f"{len(response['hits']['hits'])} records for {i}")
+            
         results += [h.to_dict() for h in response['hits']['hits']]
 
     return results

@@ -103,19 +103,21 @@ class ItemSerializer(Serializer):
         if not isinstance(db_model, database.ElasticsearchItem):
             item = database.ElasticsearchItem()
             db_model = db_model.to_dict()
+            print(db_model)
+            print(db_model)
             return stac_types.Item(
                 type="Feature",
                 stac_version=item.get_stac_version(),
                 stac_extensions=item.get_stac_extensions(),
-                id=getattr(db_model, "item_id", ""),
-                collection=getattr(db_model, "collection_id", ""),
+                id=db_model.get("item_id", ""),
+                collection=db_model.get("collection_id", ""),
                 bbox=None,
                 geometry=None,
-                properties=getattr(db_model, "properties", {}),
+                properties=db_model.get("properties", {}),
                 links=ItemLinks(
                     base_url=str(request.base_url),
-                    collection_id=getattr(db_model, "collection_id", ""),
-                    item_id=getattr(db_model, "item_id", ""),
+                    collection_id=db_model.get("collection_id", ""),
+                    item_id=db_model.get("item_id", ""),
                 ).create_links(),
                 assets={},
             )

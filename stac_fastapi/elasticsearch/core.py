@@ -257,7 +257,9 @@ class CoreCrudClient(BaseCoreClient):
 
         response = []
 
-        for collection in self.collection_table.search():
+        for collection in self.collection_table.search(
+            catalog=request.get("root_path").strip("/")
+        ):
             response.append(
                 serializers.CollectionSerializer.db_to_stac(collection, request)
             )
@@ -333,7 +335,9 @@ class CoreCrudClient(BaseCoreClient):
         page = int(query_params.get("page", "1"))
         limit = int(query_params.get("limit", "10"))
 
-        items = self.item_table.search().filter("term", collection_id=collection_id)
+        items = self.item_table.search(
+            catalog=request.get("root_path").strip("/")
+        ).filter("term", collection_id=collection_id)
         result_count = items.count()
 
         items = items[(page - 1) * limit : page * limit]

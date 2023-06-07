@@ -93,6 +93,9 @@ def get_queryset(client, table: Document, catalog: str = "", **kwargs) -> Search
     # Query list for should queries. Equivalent to a logical OR.
     should_queries = []
 
+    if ids := kwargs.get("ids"):
+        filter_queries.append(Q("terms", _id=ids))
+
     if asset_ids := kwargs.get("asset_ids"):
         filter_queries.append(Q("terms", asset_id=asset_ids))
 

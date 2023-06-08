@@ -2,27 +2,22 @@
 """
 
 """
-__author__ = 'Richard Smith'
-__date__ = '14 Jun 2021'
-__copyright__ = 'Copyright 2018 United Kingdom Research and Innovation'
-__license__ = 'BSD - see LICENSE file in top-level package directory'
-__contact__ = 'richard.d.smith@stfc.ac.uk'
+__author__ = "Richard Smith"
+__date__ = "14 Jun 2021"
+__copyright__ = "Copyright 2018 United Kingdom Research and Innovation"
+__license__ = "BSD - see LICENSE file in top-level package directory"
+__contact__ = "richard.d.smith@stfc.ac.uk"
+
+from fnmatch import fnmatch
+from typing import Dict, List, Optional
+
+from elasticsearch_dsl import DateRange, Document, GeoShape, InnerDoc, Nested
 
 from stac_fastapi.elasticsearch.config import settings
 
-from elasticsearch_dsl import Document, InnerDoc, Nested
-from elasticsearch_dsl import DateRange, GeoShape
 from .utils import Coordinates, rgetattr
 
-from typing import Optional, List, Dict
-from fnmatch import fnmatch
-
-
-DEFAULT_EXTENT = {
-    'temporal': [[None, None]],
-    'spatial': [[-180, -90, 180, 90]]
-}
-
+DEFAULT_EXTENT = {"temporal": [[None, None]], "spatial": [[-180, -90, 180, 90]]}
 
 
 class Extent(InnerDoc):
@@ -35,15 +30,16 @@ class ElasticsearchCollection(Document):
     """
     Collection class
     """
-    type = 'Collection'
+
+    type = "Collection"
     extent = Nested(Extent)
 
     @classmethod
     def search(cls, **kwargs):
         s = super().search(**kwargs)
-        s = s.filter('term', type='collection')
+        s = s.filter("term", type="collection")
         return s
-    
+
     @classmethod
     def _matches(cls, hit):
         # override _matches to match indices in a pattern instead of just ALIAS
@@ -56,7 +52,7 @@ class ElasticsearchCollection(Document):
 
         """
         try:
-            summaries = getattr(self, 'summaries')
+            summaries = getattr(self, "summaries")
         except AttributeError:
             return
 
@@ -71,7 +67,7 @@ class ElasticsearchCollection(Document):
 
         """
         try:
-            extent = getattr(self, 'extent')
+            extent = getattr(self, "extent")
         except AttributeError:
             return DEFAULT_EXTENT
 
@@ -88,16 +84,16 @@ class ElasticsearchCollection(Document):
         try:
             coordinates = Coordinates.from_geojson(extent.spatial.coordinates)
         except AttributeError:
-            coordinates = Coordinates.from_wgs84(DEFAULT_EXTENT['spatial'][0])
+            coordinates = Coordinates.from_wgs84(DEFAULT_EXTENT["spatial"][0])
 
         return dict(
             temporal=dict(interval=[[lower, upper]]),
-            spatial=dict(bbox=[coordinates.to_wgs84()])
+            spatial=dict(bbox=[coordinates.to_wgs84()]),
         )
 
     def get_keywords(self) -> Optional[List]:
         try:
-            keywords = getattr(self, 'keywords')
+            keywords = getattr(self, "keywords")
         except AttributeError:
             return
 
@@ -105,15 +101,15 @@ class ElasticsearchCollection(Document):
 
 
 class ElasticsearchItem(Document):
-    type = 'Feature'
+    type = "Feature"
 
     @classmethod
     def search(cls, **kwargs):
         s = super().search(**kwargs)
-        s = s.filter('term', type='item')
+        s = s.filter("term", type="item")
 
         return s
-    
+
     @classmethod
     def _matches(cls, hit):
         # override _matches to match indices in a pattern instead of just ALIAS
@@ -122,9 +118,9 @@ class ElasticsearchItem(Document):
 
     def search_assets(self):
         s = ElasticsearchAsset.search()
-        s = s.filter('term', item_id=self.meta.id)
-        s = s.exclude('term', categories='hidden')
-        s = s.filter('exists', field='location')
+        s = s.filter("term", item_id=self.meta.id)
+        s = s.exclude("term", catagories="hidden")
+        # s = s.filter("exists", field="location")
         return s
 
     @property
@@ -134,8 +130,14 @@ class ElasticsearchItem(Document):
     @property
     def metadata_assets(self):
         s = self.search_assets()
-        s = s.exclude('term', categories='data')
+        s = s.exclude("term", properties__catagories="data")
         return list(s.scan())
+
+    @property
+    def data_assets_count(self):
+        s = self.search_assets()
+        s = s.filter("term", properties__catagories="data")
+        return s.count()
 
     def get_stac_assets(self):
         return {asset.meta.id: asset.to_stac() for asset in self.assets}
@@ -146,11 +148,11 @@ class ElasticsearchItem(Document):
     def get_properties(self) -> Dict:
 
         try:
-            properties = getattr(self, 'properties')
+            properties = getattr(self, "properties")
         except AttributeError:
             return {}
 
-        if not hasattr(self, 'datetime'):
+        if not hasattr(self, "datetime"):
             if "start_datetime" not in properties or "end_datetime" not in properties:
                 properties["start_datetime"] = None
                 properties["end_datetime"] = None
@@ -165,7 +167,7 @@ class ElasticsearchItem(Document):
         """
 
         try:
-            coordinates = rgetattr(self, 'spatial.bbox.coordinates')
+            coordinates = rgetattr(self, "spatial.bbox.coordinates")
         except AttributeError:
             return
 
@@ -179,14 +181,14 @@ class ElasticsearchItem(Document):
         Return the collection id
         """
         try:
-            return getattr(self, 'collection_id')
+            return getattr(self, "collection_id")
         except AttributeError:
             return
 
 
 class ElasticsearchAsset(Document):
 
-    type = 'Feature'
+    type = "Feature"
 
     @classmethod
     def search(cls, **kwargs):
@@ -195,7 +197,7 @@ class ElasticsearchAsset(Document):
         # s = s.filter('exists', field='filepath_type_location')
 
         return s
-    
+
     @classmethod
     def _matches(cls, hit):
         # override _matches to match indices in a pattern instead of just ALIAS
@@ -204,7 +206,7 @@ class ElasticsearchAsset(Document):
     def get_properties(self) -> Dict:
 
         try:
-            properties = getattr(self, 'properties')
+            properties = getattr(self, "properties")
         except AttributeError:
             return {}
 
@@ -218,7 +220,7 @@ class ElasticsearchAsset(Document):
         """
 
         try:
-            coordinates = rgetattr(self, 'spatial.bbox.coordinates')
+            coordinates = rgetattr(self, "spatial.bbox.coordinates")
         except AttributeError:
             return
 
@@ -229,14 +231,15 @@ class ElasticsearchAsset(Document):
         Return the item id
         """
         try:
-            return getattr(self, 'item_id')
+            return getattr(self, "item_id")
         except AttributeError:
             return
 
     def get_roles(self) -> Optional[List]:
 
         try:
-            roles = getattr(self, 'categories')
+            properties = getattr(self, "properties")
+            roles = getattr(properties, "catagories")
         except AttributeError:
             return
 
@@ -246,50 +249,50 @@ class ElasticsearchAsset(Document):
         """
         Convert the path into a url where you can access the asset
         """
-        if getattr(self, 'media_type', 'POSIX') == 'POSIX':
-            return f'{settings.posix_download_url}{self.location}'
+        if getattr(self, "media_type", "POSIX") == "POSIX":
+            return f"{settings.posix_download_url}{self.properties.uri}"
         else:
-            return self.href
-    
+            return self.properties.href
+
     def get_size(self) -> int:
 
         try:
-            return getattr(self, 'size')
+            return getattr(self, "size")
         except AttributeError:
             return
 
     def get_media_type(self) -> str:
 
         try:
-            return getattr(self, 'media_type')
+            return getattr(self, "media_type")
         except AttributeError:
             return
 
     def get_filename(self) -> str:
 
         try:
-            return getattr(self, 'filename')
+            return getattr(self, "filename")
         except AttributeError:
             return
 
     def get_modified_time(self) -> str:
 
         try:
-            return getattr(self, 'modified_time')
+            return getattr(self, "modified_time")
         except AttributeError:
             return
 
     def get_magic_number(self) -> str:
 
         try:
-            return getattr(self, 'magic_number')
+            return getattr(self, "magic_number")
         except AttributeError:
             return
 
     def get_extension(self) -> str:
 
         try:
-            return getattr(self, 'extension')
+            return getattr(self, "extension")
         except AttributeError:
             return
 
@@ -300,9 +303,7 @@ class ElasticsearchAsset(Document):
 
         asset = dict(
             href=self.get_url(),
-            type=getattr(self, 'magic_number', None),
-            title=getattr(self, 'filename', None),
-            roles=self.get_roles()
+            roles=self.get_roles(),
         )
 
         return asset

@@ -10,6 +10,7 @@ __contact__ = "richard.d.smith@stfc.ac.uk"
 
 # Python imports
 import collections
+import re
 from string import Template
 
 from elasticsearch_dsl import Document
@@ -75,7 +76,7 @@ def dict_merge(*args, add_keys=True) -> dict:
     return rtn_dct
 
 
-def get_queryset(client, table: Document, **kwargs) -> Search:
+def get_queryset(client, table: Document, catalog: str = "", **kwargs) -> Search:
     """
     Turn the query into an `elasticsearch_dsl.Search object <https://elasticsearch-dsl.readthedocs.io/en/latest/api.html#search>`_
     :param client: The client class
@@ -84,7 +85,7 @@ def get_queryset(client, table: Document, **kwargs) -> Search:
     :return: `elasticsearch_dsl.Search object <https://elasticsearch-dsl.readthedocs.io/en/latest/api.html#search>`
     """
 
-    qs = table.search()
+    qs = table.search(catalog=catalog)
 
     # Query list for must match queries. Equivalent to a logical AND.
     filter_queries = []
@@ -133,29 +134,13 @@ def get_queryset(client, table: Document, **kwargs) -> Search:
         # if a date range, get start and end datetimes and find any items with dates in this range
         # .. identifies an open date range
         # if one datetime, find any items with dates that this intersects
-        if "/" in datetime:
-            split = datetime.split("/")
-            start_date = split[0]
-            end_date = split[1]
+        if match := re.match(
+            "(?P<start_datetime>[\S]+)/(?P<end_datetime>[\S]+)", datetime
+        ):
+            start_date = match.group("start_datetime")
+            end_date = match.group("end_datetime")
 
-            # given an end and start date, the start_datetime, end_datetime and datetime should fall within the range.
-            if start_date != ".." and end_date == "..":
-                should_queries.extend(
-                    [
-                        Q("range", properties__datetime={"gte": start_date}),
-                        Q("range", properties__start_datetime={"gte": start_date}),
-                    ]
-                )
-
-            elif end_date != ".." and start_date == "..":
-                should_queries.extend(
-                    [
-                        Q("range", properties__datetime={"lte": end_date}),
-                        Q("range", properties__end_datetime={"lte": end_date}),
-                    ]
-                )
-
-            elif end_date != ".." and start_date != "..":
+            if start_date != ".." and end_date != "..":
                 should_queries.extend(
                     [
                         Q(
@@ -172,30 +157,94 @@ def get_queryset(client, table: Document, **kwargs) -> Search:
                                     "range",
                                     properties__start_datetime={"gte": start_date},
                                 ),
-                                Q("range", properties__end_datetime={"lte": end_date}),
+                                Q(
+                                    "range",
+                                    properties__start_datetime={"lte": end_date},
+                                ),
+                            ],
+                        ),
+                        Q(
+                            "bool",
+                            filter=[
+                                Q(
+                                    "range",
+                                    properties__end_datetime={"gte": start_date},
+                                ),
+                                Q(
+                                    "range",
+                                    properties__end_datetime={"lte": end_date},
+                                ),
                             ],
                         ),
                     ]
                 )
 
-        else:
-            # Given a single datetime, datetime should match properties.datetime OR is within start AND end datetime
+            elif start_date != "..":
+                should_queries.extend(
+                    [
+                        Q("range", properties__datetime={"gte": start_date}),
+                        Q("range", properties__end_datetime={"gte": start_date}),
+                    ]
+                )
+
+            elif end_date != "..":
+                should_queries.extend(
+                    [
+                        Q("range", properties__datetime={"lte": end_date}),
+                        Q("range", properties__start_datetime={"lte": end_date}),
+                    ]
+                )
+
+        elif match := re.match("(?P<date>[-\d]+)T(?P<time>[:.\d]+)[Z]?", datetime):
             should_queries.extend(
                 [
-                    Q("match", properties__datetime=kwargs.get("datetime")),
+                    Q("match", properties__datetime=datetime),
+                    Q(
+                        "bool",
+                        filter=[
+                            Q("range", properties__start_datetime={"gte": datetime}),
+                            Q("range", properties__end_datetime={"lte": datetime}),
+                        ],
+                    ),
+                ]
+            )
+
+        elif match := re.match(
+            "(?P<year>\d{2,4})[-/.](?P<month>\d{1,2})[-/.](?P<day>\d{1,2})", datetime
+        ):
+            should_queries.extend(
+                [
+                    Q("match", properties__datetime=datetime),
                     Q(
                         "bool",
                         filter=[
                             Q(
                                 "range",
                                 properties__start_datetime={
-                                    "lte": kwargs.get("datetime")
+                                    "gte": f"{datetime}T00:00:00"
+                                },
+                            ),
+                            Q(
+                                "range",
+                                properties__start_datetime={
+                                    "lte": f"{datetime}T23:59:59"
+                                },
+                            ),
+                        ],
+                    ),
+                    Q(
+                        "bool",
+                        filter=[
+                            Q(
+                                "range",
+                                properties__end_datetime={
+                                    "gte": f"{datetime}T00:00:00"
                                 },
                             ),
                             Q(
                                 "range",
                                 properties__end_datetime={
-                                    "gte": kwargs.get("datetime")
+                                    "lte": f"{datetime}T23:59:59"
                                 },
                             ),
                         ],
@@ -254,13 +303,15 @@ def get_queryset(client, table: Document, **kwargs) -> Search:
 
     if client.extension_is_enabled("FreeTextExtension"):
         if q := kwargs.get("q"):
-            qs = qs.query(
-                QueryString(query=q, default_field="properties.*", lenient=True)
-            )
+            qs = qs.query(QueryString(query=q, fields=["properties.*"], lenient=True))
 
-    # if client.extension_is_enabled("ContextCollectionExtension"):
-    #     if not collection_ids:
-    #         qs.aggs.bucket("collections", "terms", field="collection_id.keyword")
+    if client.extension_is_enabled("ContextCollectionExtension"):
+        if (
+            "context_collection" in kwargs
+            and kwargs["context_collection"]
+            and not collection_ids
+        ):
+            qs.aggs.bucket("collections", "terms", field="collection_id.keyword")
 
     qs = qs.query(
         Q(
@@ -271,6 +322,19 @@ def get_queryset(client, table: Document, **kwargs) -> Search:
 
     if client.extension_is_enabled("FieldsExtension"):
         if fields := kwargs.get("fields"):
-            qs = qs.source(include=fields)
+
+            if isinstance(fields, dict):
+
+                if exclude_fields := fields.get("include"):
+                    qs = qs.source(include=list(exclude_fields))
+
+                if exclude_fields := fields.get("exclude"):
+                    qs = qs.source(exclude=list(exclude_fields))
+
+            elif isinstance(fields, list):
+                qs.source(include=fields)
+
+            else:
+                qs.source(include=[fields])
 
     return qs

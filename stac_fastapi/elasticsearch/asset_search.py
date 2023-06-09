@@ -11,7 +11,7 @@ __contact__ = "rhys.r.evans@stfc.ac.uk"
 import logging
 
 # Python imports
-from datetime import datetime
+from datetime import datetime as datetime_type
 
 # Typing imports
 from typing import List, Optional, Type, Union
@@ -20,20 +20,16 @@ from typing import List, Optional, Type, Union
 import attr
 from elasticsearch import NotFoundError
 from fastapi import HTTPException
+from stac_fastapi_asset_search import types as asset_types
 
 # Stac FastAPI asset search imports
 from stac_fastapi_asset_search.client import BaseAssetSearchClient
-from stac_fastapi_asset_search.types import (
-    Asset,
-    AssetCollection,
-    AssetSearchPostRequest,
-)
 
 from stac_fastapi.elasticsearch.context import generate_context
-from stac_fastapi.elasticsearch.models import serializers
+from stac_fastapi.elasticsearch.models.database import ElasticsearchAsset
 
 # Package imports
-from stac_fastapi.elasticsearch.models.database import ElasticsearchAsset
+from stac_fastapi.elasticsearch.models.serializers import AssetSerializer
 from stac_fastapi.elasticsearch.pagination import generate_pagination_links
 
 from .utils import get_queryset
@@ -52,8 +48,8 @@ class AssetSearchClient(BaseAssetSearchClient):
     asset_table: Type[ElasticsearchAsset] = attr.ib(default=ElasticsearchAsset)
 
     def post_asset_search(
-        self, search_request: Type[AssetSearchPostRequest], **kwargs
-    ) -> AssetCollection:
+        self, search_request: Type[asset_types.AssetSearchPostRequest], **kwargs
+    ) -> asset_types.AssetCollection:
         """Cross catalog asset search (POST).
 
         Called with `POST /asset/search`.
@@ -75,19 +71,16 @@ class AssetSearchClient(BaseAssetSearchClient):
         result_count = assets.count()
 
         response = []
-        base_url = str(kwargs["request"].base_url)
+        request = kwargs["request"]
 
         for asset in assets.execute():
-            response_asset = serializers.AssetSerializer.db_to_stac(
-                asset, base_url, getattr(kwargs["request"], "collection", None)
-            )
-            response.append(response_asset)
+            response.append(AssetSerializer.db_to_stac(asset, request))
 
-        asset_collection = AssetCollection(
+        asset_collection = asset_types.AssetCollection(
             type="FeatureCollection",
             features=response,
             links=generate_pagination_links(
-                kwargs["request"], result_count, search_request.limit
+                request, result_count, search_request.limit
             ),
         )
 
@@ -104,13 +97,12 @@ class AssetSearchClient(BaseAssetSearchClient):
         self,
         ids: Optional[List[str]] = None,
         items: Optional[List[str]] = None,
-        collection: Optional[str] = None,
         bbox: Optional[List[NumType]] = None,
-        datetime: Optional[Union[str, datetime]] = None,
+        datetime: Optional[Union[str, datetime_type]] = None,
         role: Optional[List[str]] = None,
         limit: Optional[int] = 10,
         **kwargs,
-    ) -> AssetCollection:
+    ) -> asset_types.AssetCollection:
         """Cross catalog asset search (GET).
 
         Called with `GET /asset/search`.
@@ -135,18 +127,16 @@ class AssetSearchClient(BaseAssetSearchClient):
         result_count = assets.count()
 
         response = []
-        base_url = str(kwargs["request"].base_url)
+        request = kwargs["request"]
 
         for asset in assets.execute():
-            response_asset = serializers.AssetSerializer.db_to_stac(
-                asset, base_url, collection
-            )
+            response_asset = AssetSerializer.db_to_stac(asset, request)
             response.append(response_asset)
 
-        links = generate_pagination_links(kwargs["request"], result_count, limit)
+        links = generate_pagination_links(request, result_count, limit)
 
         # Create base response
-        asset_collection = AssetCollection(
+        asset_collection = asset_types.AssetCollection(
             type="FeatureCollection",
             features=response,
             links=links,
@@ -161,7 +151,7 @@ class AssetSearchClient(BaseAssetSearchClient):
 
     def get_assets(
         self, item_id: str = None, collection_id: str = None, **kwargs
-    ) -> AssetCollection:
+    ) -> asset_types.AssetCollection:
         """Get item assets (GET).
 
         Called with `GET /collection/{collection_id}/items/{item_id}/assets`.
@@ -176,7 +166,7 @@ class AssetSearchClient(BaseAssetSearchClient):
 
     def get_asset(
         self, collection_id: str, item_id: str, asset_id: str, **kwargs
-    ) -> Asset:
+    ) -> asset_types.Asset:
         """Get asset by id.
 
         Called with `GET /collections/{collection_id}/items/{item_id}/assets/{asset_id}`.
@@ -207,6 +197,6 @@ class AssetSearchClient(BaseAssetSearchClient):
                 )
             )
 
-        base_url = str(kwargs["request"].base_url)
+        request = kwargs["request"]
 
-        return serializers.AssetSerializer.db_to_stac(asset, base_url, collection_id)
+        return AssetSerializer.db_to_stac(asset, request)

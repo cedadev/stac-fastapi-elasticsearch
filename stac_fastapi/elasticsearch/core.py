@@ -8,13 +8,14 @@ __copyright__ = "Copyright 2018 United Kingdom Research and Innovation"
 __license__ = "BSD - see LICENSE file in top-level package directory"
 __contact__ = "richard.d.smith@stfc.ac.uk"
 
+import json
 import logging
 
 # Python imports
 from datetime import datetime
 
 # Typing imports
-from typing import Dict, List, Optional, Type, Union
+from typing import List, Optional, Type, Union
 from urllib.parse import urljoin
 
 # Third-party imports
@@ -30,6 +31,7 @@ from stac_pydantic.links import Relations
 
 # Stac pydantic imports
 from stac_pydantic.shared import MimeTypes
+from starlette.requests import Request as StarletteRequest
 
 from stac_fastapi.elasticsearch.context import generate_context
 from stac_fastapi.elasticsearch.models import database, serializers
@@ -58,6 +60,9 @@ class CoreCrudClient(BaseCoreClient):
     collection_table: Type[database.ElasticsearchCollection] = attr.ib(
         default=database.ElasticsearchCollection
     )
+    item_serializer: Type[serializers.ItemSerializer] = attr.ib(
+        default=serializers.ItemSerializer
+    )
 
     def conformance(self, **kwargs) -> stac_types.Conformance:
         """Conformance classes.
@@ -71,7 +76,10 @@ class CoreCrudClient(BaseCoreClient):
         return stac_types.Conformance(conformsTo=self.list_conformance_classes())
 
     def post_search(
-        self, search_request: Type[BaseSearchPostRequest], **kwargs
+        self,
+        request: StarletteRequest,
+        search_request: Type[BaseSearchPostRequest],
+        **kwargs,
     ) -> stac_types.ItemCollection:
         """Cross catalog search (POST).
 
@@ -89,28 +97,21 @@ class CoreCrudClient(BaseCoreClient):
         request_dict["item_ids"] = request_dict.pop("ids")
         request_dict["collection_ids"] = request_dict.pop("collections")
 
-        items = get_queryset(self, self.item_table, **request_dict)
+        items = get_queryset(
+            self, self.item_table, catalog=request.get("root_path"), **request_dict
+        )
         result_count = items.count()
 
         response = []
-        base_url = str(kwargs["request"].base_url)
 
-        items = items.execute()
-
-        if self.extension_is_enabled("AssetSearchExtension"):
-            item_serializer = serializers.ItemAssetSearchSerializer
-        else:
-            item_serializer = serializers.ItemSerializer
-
-        for item in items:
-            response_item = item_serializer.db_to_stac(item, base_url)
-            response.append(response_item)
+        for item in items.execute():
+            response.append(self.item_serializer.db_to_stac(item, request))
 
         item_collection = stac_types.ItemCollection(
             type="FeatureCollection",
             features=response,
             links=generate_pagination_links(
-                kwargs["request"], result_count, search_request.limit
+                request, result_count, search_request.limit
             ),
         )
 
@@ -136,6 +137,7 @@ class CoreCrudClient(BaseCoreClient):
 
     def get_search(
         self,
+        request: StarletteRequest,
         collections: Optional[List[str]] = None,
         ids: Optional[List[str]] = None,
         bbox: Optional[List[NumType]] = None,
@@ -163,24 +165,17 @@ class CoreCrudClient(BaseCoreClient):
         if "filter-lang" not in search.keys():
             search["filter-lang"] = "cql-text"
 
-        items = get_queryset(self, self.item_table, **search)
+        items = get_queryset(
+            self, self.item_table, catalog=request.get("root_path").strip("/"), **search
+        )
         result_count = items.count()
 
         response = []
-        base_url = str(kwargs["request"].base_url)
 
-        items = items.execute()
+        for item in items.execute():
+            response.append(self.item_serializer.db_to_stac(item, request))
 
-        if self.extension_is_enabled("AssetSearchExtension"):
-            item_serializer = serializers.ItemAssetSearchSerializer
-        else:
-            item_serializer = serializers.ItemSerializer
-
-        for item in items:
-            response_item = item_serializer.db_to_stac(item, base_url)
-            response.append(response_item)
-
-        links = generate_pagination_links(kwargs["request"], result_count, limit)
+        links = generate_pagination_links(request, result_count, limit)
 
         # Create base response
         item_collection = stac_types.ItemCollection(
@@ -208,7 +203,9 @@ class CoreCrudClient(BaseCoreClient):
 
         return item_collection
 
-    def get_item(self, item_id: str, collection_id: str, **kwargs) -> stac_types.Item:
+    def get_item(
+        self, request: StarletteRequest, item_id: str, collection_id: str, **kwargs
+    ) -> stac_types.Item:
         """Get item by id.
 
         Called with `GET /collections/{collection_id}/items/{item_id}`.
@@ -221,13 +218,13 @@ class CoreCrudClient(BaseCoreClient):
         """
         try:
             item = self.item_table.get(id=item_id)
-        except NotFoundError:
+        except NotFoundError as exc:
             raise (
                 HTTPException(
                     status_code=404,
                     detail=f"Item: {item_id} from collection: {collection_id} not found",
                 )
-            )
+            ) from exc
 
         if not getattr(item, "collection_id", None) == collection_id:
             raise (
@@ -237,16 +234,9 @@ class CoreCrudClient(BaseCoreClient):
                 )
             )
 
-        base_url = str(kwargs["request"].base_url)
+        return self.item_serializer.db_to_stac(item, request)
 
-        if self.extension_is_enabled("AssetSearchExtension"):
-            item_serializer = serializers.ItemAssetSearchSerializer
-        else:
-            item_serializer = serializers.ItemSerializer
-
-        return item_serializer.db_to_stac(item, base_url)
-
-    def all_collections(self, **kwargs) -> Dict:
+    def all_collections(self, request: StarletteRequest, **kwargs) -> dict:
         """Get all available collections.
 
         Called with `GET /collections`.
@@ -254,47 +244,26 @@ class CoreCrudClient(BaseCoreClient):
         Returns:
             A list of collections.
         """
-        query_params = dict(kwargs["request"].query_params)
-
-        collections = self.collection_table.search()
 
         response = []
 
-        base_url = str(kwargs["request"].base_url)
-
-        for collection in collections:
-            collection.base_url = base_url
-
-            coll_response = serializers.CollectionSerializer.db_to_stac(
-                collection, base_url
+        for collection in self.collection_table.search(
+            catalog=request.get("root_path").strip("/")
+        ):
+            response.append(
+                serializers.CollectionSerializer.db_to_stac(collection, request)
             )
-
-            if self.extension_is_enabled("FilterExtension"):
-                coll_response["links"].extend(
-                    [
-                        {
-                            "rel": "https://www.opengis.net/def/rel/ogc/1.0/queryables",
-                            "type": MimeTypes.json,
-                            "href": urljoin(
-                                base_url,
-                                f"collections/{coll_response.get('id')}/queryables",
-                            ),
-                        }
-                    ]
-                )
-
-            response.append(coll_response)
 
         links = [
             {
                 "rel": Relations.root,
                 "type": MimeTypes.json,
-                "href": base_url,
+                "href": str(request.base_url),
             },
             {
                 "rel": Relations.self,
                 "type": MimeTypes.json,
-                "href": urljoin(base_url, "collections"),
+                "href": urljoin(str(request.base_url), "collections"),
             },
         ]
 
@@ -303,7 +272,9 @@ class CoreCrudClient(BaseCoreClient):
             "links": links,
         }
 
-    def get_collection(self, collection_id: str, **kwargs) -> stac_types.Collection:
+    def get_collection(
+        self, request: StarletteRequest, collection_id: str, **kwargs
+    ) -> stac_types.Collection:
         """Get collection by id.
 
         Called with `GET /collections/{collection_id}`.
@@ -319,10 +290,7 @@ class CoreCrudClient(BaseCoreClient):
         except NotFoundError:
             raise (NotFoundError(404, f"Collection: {collection_id} not found"))
 
-        base_url = str(kwargs["request"].base_url)
-        collection.base_url = base_url
-
-        collection = serializers.CollectionSerializer.db_to_stac(collection, base_url)
+        collection = serializers.CollectionSerializer.db_to_stac(collection, request)
 
         if self.extension_is_enabled("FilterExtension"):
             collection["links"].append(
@@ -330,7 +298,8 @@ class CoreCrudClient(BaseCoreClient):
                     "rel": "https://www.opengis.net/def/rel/ogc/1.0/queryables",
                     "type": MimeTypes.json,
                     "href": urljoin(
-                        base_url, f"collections/{collection.get('id')}/queryables"
+                        str(request.base_url),
+                        f"collections/{collection.get('id')}/queryables",
                     ),
                 }
             )
@@ -338,7 +307,7 @@ class CoreCrudClient(BaseCoreClient):
         return collection
 
     def item_collection(
-        self, collection_id: str, limit: int = 10, **kwargs
+        self, request: StarletteRequest, collection_id: str, limit: int = 10, **kwargs
     ) -> stac_types.ItemCollection:
         """Get all items from a specific collection.
 
@@ -352,11 +321,13 @@ class CoreCrudClient(BaseCoreClient):
         Returns:
             An ItemCollection.
         """
-        query_params = dict(kwargs["request"].query_params)
+        query_params = dict(request.query_params)
         page = int(query_params.get("page", "1"))
         limit = int(query_params.get("limit", "10"))
 
-        items = self.item_table.search().filter("term", collection_id=collection_id)
+        items = self.item_table.search(
+            catalog=request.get("root_path").strip("/")
+        ).filter("term", collection_id=collection_id)
         result_count = items.count()
 
         items = items[(page - 1) * limit : page * limit]
@@ -365,21 +336,14 @@ class CoreCrudClient(BaseCoreClient):
 
         response = []
 
-        base_url = str(kwargs["request"].base_url)
-
-        if self.extension_is_enabled("AssetSearchExtension"):
-            item_serializer = serializers.ItemAssetSearchSerializer
-        else:
-            item_serializer = serializers.ItemSerializer
-
         for item in items:
-            response.append(item_serializer.db_to_stac(item, base_url))
+            response.append(self.item_serializer.db_to_stac(item, request))
 
         # Generate the base response
         item_collection = stac_types.ItemCollection(
             type="FeatureCollection",
             features=response,
-            links=generate_pagination_links(kwargs["request"], result_count, limit),
+            links=generate_pagination_links(request, result_count, limit),
         )
 
         # Modify response with extensions

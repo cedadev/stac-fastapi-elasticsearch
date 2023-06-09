@@ -10,12 +10,13 @@ __contact__ = "richard.d.smith@stfc.ac.uk"
 
 from stac_fastapi.api.app import StacApi
 from stac_fastapi.api.models import create_get_request_model, create_post_request_model
-from stac_fastapi.extensions.core import ContextExtension  # SortExtension,
+from stac_fastapi.extensions.core import (
+    ContextExtension,
+)  # SortExtension,; TransactionExtension,
 from stac_fastapi.extensions.core import (
     FieldsExtension,
     FilterExtension,
     PaginationExtension,
-    TransactionExtension,
 )
 from stac_fastapi_asset_filelist.asset_filelist import AssetFileListExtension
 from stac_fastapi_asset_filelist.types import GetAssetFileListRequest
@@ -86,24 +87,10 @@ api = StacApi(
 app = api.app
 
 
-def run():
-    """Run app from command line using uvicorn if available.
-    This has been built specifically for use with docker-compose.
-    """
-    try:
-        import uvicorn
-
-        uvicorn.run(
-            "stac_fastapi.elasticsearch.app:app",
-            host=settings.APP_HOST,
-            port=settings.APP_PORT,
-            log_level="info",
-            reload_dirs=["/app/stac_fastapi", "/app/conf"],
-            reload=True,
-        )
-    except ImportError:
-        raise RuntimeError("Uvicorn must be installed in order to use command")
+def set_sub_api(prefix):
+    app.mount(f"/{prefix}", app)
 
 
-if __name__ == "__main__":
-    run()
+if len(settings.CATALOGS) > 1:
+    for catalog in settings.CATALOGS.keys():
+        set_sub_api(catalog)

@@ -150,13 +150,14 @@ class ElasticsearchAsset(STACDocument):
         """
         Return roles
         """
-        return list(getattr(self.get_properties(), "categories", []))
+        return list(self.get_properties().get("catagories", []))
 
     def get_uri(self) -> list:
         """
         Return uri
         """
-        return getattr(self.get_properties(), "uri", "")
+
+        return self.get_properties().get("uri", "")
 
     def get_url(self) -> str:
         """
@@ -219,7 +220,7 @@ class ElasticsearchItem(STACDocument):
     def asset_search(self):
         asset_search = (
             ElasticsearchAsset.search()
-            .exclude("term", properties__categories="hidden")
+            .exclude("term", properties__catagories="hidden")
             .filter("exists", field="properties.uri")
             .filter("term", item_id=self.meta.id)
         )
@@ -231,8 +232,8 @@ class ElasticsearchItem(STACDocument):
         """
         Return elasticsearch assets
         """
-        if self.extension_is_enabled("ContextCollectionExtension"):
-            return []
+        # if self.extension_is_enabled("ContextCollectionExtension"):
+        #     return []
 
         return list(self.asset_search().scan())
 
@@ -253,6 +254,9 @@ class ElasticsearchItem(STACDocument):
         Return stac assets
         """
         return {asset.meta.id: asset.to_stac() for asset in self.elasticsearch_assets}
+
+    def get_stac_metadata_assets(self):
+        return {asset.meta.id: asset.to_stac() for asset in self.metadata_assets}
 
     def get_properties(self) -> dict:
         """
@@ -300,17 +304,17 @@ class ElasticsearchItem(STACDocument):
             item_id=self.meta.id,
         ).create_links()
 
-        if self.extension_is_enabled("ContextCollectionExtension"):
-            links.append(
-                dict(
-                    rel="assets",
-                    type=MimeTypes.json,
-                    href=urljoin(
-                        base_url,
-                        f"collections/{self.collection_id}/items/{self.meta.id}/assets",
-                    ),
-                )
-            )
+        # if self.extension_is_enabled("ContextCollectionExtension"):
+        #     links.append(
+        #         dict(
+        #             rel="assets",
+        #             type=MimeTypes.json,
+        #             href=urljoin(
+        #                 base_url,
+        #                 f"collections/{self.collection_id}/items/{self.meta.id}/assets",
+        #             ),
+        #         )
+        #     )
 
         return links
 

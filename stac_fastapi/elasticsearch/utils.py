@@ -305,13 +305,13 @@ def get_queryset(client, table: Document, catalog: str = "", **kwargs) -> Search
         if q := kwargs.get("q"):
             qs = qs.query(QueryString(query=q, fields=["properties.*"], lenient=True))
 
-    if client.extension_is_enabled("ContextCollectionExtension"):
-        if (
-            "context_collection" in kwargs
-            and kwargs["context_collection"]
-            and not collection_ids
-        ):
-            qs.aggs.bucket("collections", "terms", field="collection_id.keyword")
+    # if client.extension_is_enabled("ContextCollectionExtension"):
+    #     if (
+    #         "context_collection" in kwargs
+    #         and kwargs["context_collection"]
+    #         and not collection_ids
+    #     ):
+    #         qs.aggs.bucket("collections", "terms", field="collection_id.keyword")
 
     qs = qs.query(
         Q(

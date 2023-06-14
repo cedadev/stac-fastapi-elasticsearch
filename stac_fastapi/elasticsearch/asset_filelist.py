@@ -11,14 +11,13 @@ __contact__ = "rhys.r.evans@stfc.ac.uk"
 import logging
 
 # Typing imports
-from typing import List, Type, Union
+from typing import Type, Union
 
 # Third-party imports
 import attr
 
 # Stac FastAPI asset search imports
 from stac_fastapi_asset_filelist.client import BaseAssetFileListClient
-from stac_fastapi_asset_filelist.types import Asset
 
 # Package imports
 from stac_fastapi.elasticsearch.models.database import ElasticsearchAsset
@@ -36,7 +35,7 @@ class AssetFileListClient(BaseAssetFileListClient):
 
     def get_asset_filelist(
         self, item_id: str = None, collection_id: str = None, **kwargs
-    ) -> List[Asset]:
+    ) -> dict:
         """Get item asset file list (GET).
 
         Called with `GET /collection/{collection_id}/items/{item_id}/asset_filelist.json`.
@@ -52,10 +51,10 @@ class AssetFileListClient(BaseAssetFileListClient):
             .extra(size=10000)
         )
 
-        response = []
+        response = {}
 
         for asset in assets.execute():
             response_asset = InlineAssetSerializer.db_to_stac(asset)
-            response.append(response_asset)
+            response[response_asset["title"]] = response_asset
 
         return response

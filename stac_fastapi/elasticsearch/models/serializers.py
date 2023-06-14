@@ -10,6 +10,7 @@ __contact__ = "richard.d.smith@stfc.ac.uk"
 
 import abc
 from typing import Any, Dict, TypedDict
+from urllib.parse import urljoin
 
 import elasticsearch_dsl
 from dateutil import parser
@@ -76,7 +77,7 @@ class AssetSerializer(Serializer):
         db_item = database.ElasticsearchAsset(
             meta={"id": stac_data.get("id")},
             id=stac_data.get("id"),
-            roles=stac_data.get("categories"),
+            roles=stac_data.get("catagories"),
             bbox=stac_data.get("bbox"),
             item_id=stac_data.get("item"),
             location=stac_data.get("uri"),
@@ -101,30 +102,37 @@ class ItemSerializer(Serializer):
     ) -> stac_types.Item:
         # Added for different mappings
 
-        if db_model.data_assets_count > 25:
-
-            inline_assets = [
-                {
-                    "href": urljoin(
-                        base_url,
-                        f"collections/{item['collection']}/items/{item['id']}/asset_filelist.json",
-                    ),
-                    "roles": ["filelist", "https"],
-                }
-            ]
-
-            meta_assets = list(db_model.get_stac_metadata_assets().values())
-
-            if len(meta_assets) > 0:
-
-                inline_assets.append(meta_assets)
-
-        else:
-            inline_assets = list(db_model.get_stac_assets().values())
-
+        inline_assets = {}
         if not isinstance(db_model, database.ElasticsearchItem):
             item = database.ElasticsearchItem()
             db_model = db_model.to_dict()
+            if db_model.data_assets_count > 25:
+
+                href = urljoin(
+                    str(request.base_url),
+                    f"collections/{db_model.get('collection_id', '')}/items/{db_model.get('item_id', '')}/asset_filelist.json",
+                )
+
+                inline_assets["filelist"] = {
+                    "href": href,
+                    "roles": ["filelist", "https"],
+                    "title": "filelist",
+                    "type": "application/json",
+                }
+
+                meta_assets = {
+                    asset["title"]: asset
+                    for asset in db_model.get_stac_metadata_assets().values()
+                }
+
+                inline_assets.append(meta_assets)
+
+            else:
+                inline_assets = {
+                    asset["href"]: asset
+                    for asset in db_model.get_stac_assets().values()
+                }
+
             return stac_types.Item(
                 type="Feature",
                 stac_version=item.get_stac_version(),
@@ -141,6 +149,32 @@ class ItemSerializer(Serializer):
                 ).create_links(),
                 assets=inline_assets,
             )
+
+        if db_model.data_assets_count > 25:
+
+            href = urljoin(
+                str(request.base_url),
+                f"collections/{db_model.get_collection_id()}/items/{db_model.meta.id}/asset_filelist.json",
+            )
+
+            inline_assets["filelist"] = {
+                "href": href,
+                "roles": ["filelist", "https"],
+                "title": "filelist",
+                "type": "application/json",
+            }
+
+            meta_assets = {
+                asset["href"]: asset
+                for asset in db_model.get_stac_metadata_assets().values()
+            }
+
+            inline_assets.update(meta_assets)
+
+        else:
+            inline_assets = {
+                asset["title"]: asset for asset in db_model.get_stac_assets().values()
+            }
 
         return stac_types.Item(
             type="Feature",
@@ -236,9 +270,13 @@ class InlineAssetSerializer(Serializer):
         db_model: database.ElasticsearchAsset,
     ) -> Asset:
 
+        properties = getattr(db_model, "properties", {})
+
         return Asset(
             href=db_model.get_url(),
             roles=db_model.get_roles(),
+            type=getattr(properties, "magic_number", None),
+            title=getattr(properties, "filename", None),
         )
 
     @classmethod

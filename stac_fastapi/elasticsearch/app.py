@@ -9,11 +9,13 @@ __license__ = "BSD - see LICENSE file in top-level package directory"
 __contact__ = "richard.d.smith@stfc.ac.uk"
 
 from stac_fastapi.api.app import StacApi
-from stac_fastapi.api.models import create_get_request_model, create_post_request_model
-from stac_fastapi.extensions.core import (
+from stac_fastapi.api.models import (
+    create_get_request_model,
+    create_post_request_model,
+    create_request_model,
+)
+from stac_fastapi.extensions.core import (  # SortExtension,; TransactionExtension,
     ContextExtension,
-)  # SortExtension,; TransactionExtension,
-from stac_fastapi.extensions.core import (
     FieldsExtension,
     FilterExtension,
     PaginationExtension,
@@ -21,9 +23,9 @@ from stac_fastapi.extensions.core import (
 from stac_fastapi_asset_filelist.asset_filelist import AssetFileListExtension
 from stac_fastapi_asset_filelist.types import GetAssetFileListRequest
 from stac_fastapi_asset_search.asset_search import AssetSearchExtension
-from stac_fastapi_asset_search.client import (
-    create_asset_search_get_request_model,
-    create_asset_search_post_request_model,
+from stac_fastapi_asset_search.types import (
+    AssetSearchGetRequest,
+    AssetSearchPostRequest,
 )
 from stac_fastapi_context_collections.context_collections import (
     ContextCollectionExtension,
@@ -47,27 +49,36 @@ extensions = [
     PaginationExtension(),
 ]
 
+
 # Adding the asset search extension seperately as it uses the other extensions
 extensions.append(
     AssetSearchExtension(
         client=AssetSearchClient(extensions=extensions),
-        asset_search_get_request_model=create_asset_search_get_request_model(
-            extensions
+        asset_search_get_request_model=create_request_model(
+            "AssetSearchGetRequest",
+            base_model=AssetSearchGetRequest,
+            extensions=extensions,
+            request_type="GET",
         ),
-        asset_search_post_request_model=create_asset_search_post_request_model(
-            extensions
+        asset_search_post_request_model=create_request_model(
+            "AssetSearchPostRequest",
+            base_model=AssetSearchPostRequest,
+            extensions=extensions,
+            request_type="POST",
         ),
         settings=settings,
     )
 )
 
-# Adding the asset filelist extension
 extensions.append(
     AssetFileListExtension(
         client=AssetFileListClient(),
         settings=settings,
-        asset_filelist_request_model=create_get_request_model(
-            extensions, base_model=GetAssetFileListRequest
+        asset_filelist_request_model=create_request_model(
+            "AssetFileListGetRequest",
+            extensions=extensions,
+            base_model=GetAssetFileListRequest,
+            request_type="GET",
         ),
     )
 )

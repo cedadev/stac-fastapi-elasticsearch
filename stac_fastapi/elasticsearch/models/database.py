@@ -274,12 +274,6 @@ class ElasticsearchItem(STACDocument):
     def get_geometry(self):
         ...
 
-    def get_license(self) -> str:
-        return getattr(self, "license", "")
-
-    def get_providers(self) -> list:
-        return getattr(self, "providers", [])
-
     def get_collection_id(self) -> str:
         """
         Return the collection id

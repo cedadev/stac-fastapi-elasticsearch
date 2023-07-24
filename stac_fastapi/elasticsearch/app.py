@@ -10,13 +10,17 @@ __contact__ = "richard.d.smith@stfc.ac.uk"
 
 from stac_fastapi.api.app import StacApi
 from stac_fastapi.api.models import create_get_request_model, create_post_request_model
-from stac_fastapi.extensions.core import (
+from stac_fastapi.elasticsearch.asset_search import AssetSearchClient
+from stac_fastapi.elasticsearch.config import settings
+from stac_fastapi.elasticsearch.core import CoreCrudClient
+from stac_fastapi.elasticsearch.filters import FiltersClient
+from stac_fastapi.elasticsearch.models import database
+from stac_fastapi.elasticsearch.session import Session
+from stac_fastapi.extensions.core import (  # SortExtension,; TransactionExtension,
     ContextExtension,
     FieldsExtension,
     FilterExtension,
     PaginationExtension,
-    SortExtension,
-    TransactionExtension,
 )
 from stac_fastapi_asset_search.asset_search import AssetSearchExtension
 from stac_fastapi_asset_search.client import (
@@ -27,12 +31,6 @@ from stac_fastapi_context_collections.context_collections import (
     ContextCollectionExtension,
 )
 from stac_fastapi_freetext.free_text import FreeTextExtension
-
-from stac_fastapi.elasticsearch.asset_search import AssetSearchClient
-from stac_fastapi.elasticsearch.config import settings
-from stac_fastapi.elasticsearch.core import CoreCrudClient
-from stac_fastapi.elasticsearch.filters import FiltersClient
-from stac_fastapi.elasticsearch.session import Session
 
 extensions = [
     ContextExtension(),
@@ -47,7 +45,13 @@ extensions = [
 # Adding the asset search extension seperately as it uses the other extensions
 extensions.append(
     AssetSearchExtension(
-        client=AssetSearchClient(extensions=extensions),
+        client=AssetSearchClient(
+            extensions=extensions,
+            asset_table=database.ElasticsearchAsset(
+                extensions=extensions,
+                asset_table=database.ElasticsearchAsset(extensions=extensions),
+            ),
+        ),
         asset_search_get_request_model=create_asset_search_get_request_model(
             extensions
         ),
@@ -62,7 +66,12 @@ session = Session.create_from_settings(settings)
 api = StacApi(
     settings=settings,
     extensions=extensions,
-    client=CoreCrudClient(session=session, extensions=extensions),
+    client=CoreCrudClient(
+        session=session,
+        extensions=extensions,
+        item_table=database.ElasticsearchItem(extensions=extensions),
+        collection_table=database.ElasticsearchCollection(extensions=extensions),
+    ),
     pagination_extension=PaginationExtension,
     description=settings.STAC_DESCRIPTION,
     title=settings.STAC_TITLE,
@@ -71,3 +80,12 @@ api = StacApi(
 )
 
 app = api.app
+
+
+def set_sub_api(prefix):
+    app.mount(f"/{prefix}", app)
+
+
+if len(settings.CATALOGS) > 1:
+    for catalog in settings.CATALOGS.keys():
+        set_sub_api(catalog)

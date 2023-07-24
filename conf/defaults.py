@@ -12,9 +12,12 @@ import os
 
 ELASTICSEARCH_CONNECTION = {"hosts": ["database:9200"]}
 
-COLLECTION_INDEX = "stac-collections"
-ITEM_INDEX = "stac-items"
-ASSET_INDEX = "stac-assets"
+CATALOGS = {
+    "COLLECTION_INDEX": "stac-collections",
+    "ITEM_INDEX": "stac-items",
+    "ASSET_INDEX": "stac-assets",
+}
+
 
 STAC_DESCRIPTION = "STAC API Elasticsearch"
 STAC_TITLE = "STAC API Elasticsearch"

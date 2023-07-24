@@ -20,17 +20,15 @@ from typing import List, Optional, Type, Union
 import attr
 from elasticsearch import NotFoundError
 from fastapi import HTTPException
+from stac_fastapi.elasticsearch.context import generate_context
+from stac_fastapi.elasticsearch.models import database, serializers
+
+# Package imports
+from stac_fastapi.elasticsearch.pagination import generate_pagination_links
 from stac_fastapi_asset_search import types as asset_types
 
 # Stac FastAPI asset search imports
 from stac_fastapi_asset_search.client import BaseAssetSearchClient
-
-from stac_fastapi.elasticsearch.context import generate_context
-from stac_fastapi.elasticsearch.models.database import ElasticsearchAsset
-
-# Package imports
-from stac_fastapi.elasticsearch.models.serializers import AssetSerializer
-from stac_fastapi.elasticsearch.pagination import generate_pagination_links
 
 from .utils import get_queryset
 
@@ -45,7 +43,9 @@ NumType = Union[float, int]
 @attr.s
 class AssetSearchClient(BaseAssetSearchClient):
 
-    asset_table: Type[ElasticsearchAsset] = attr.ib(default=ElasticsearchAsset)
+    asset_table: Type[database.ElasticsearchAsset] = attr.ib(
+        default=database.ElasticsearchAsset
+    )
 
     def post_asset_search(
         self, search_request: Type[asset_types.AssetSearchPostRequest], **kwargs
@@ -74,7 +74,7 @@ class AssetSearchClient(BaseAssetSearchClient):
         request = kwargs["request"]
 
         for asset in assets.execute():
-            response.append(AssetSerializer.db_to_stac(asset, request))
+            response.append(serializers.AssetSerializer.db_to_stac(asset, request))
 
         asset_collection = asset_types.AssetCollection(
             type="FeatureCollection",
@@ -130,7 +130,7 @@ class AssetSearchClient(BaseAssetSearchClient):
         request = kwargs["request"]
 
         for asset in assets.execute():
-            response_asset = AssetSerializer.db_to_stac(asset, request)
+            response_asset = serializers.AssetSerializer.db_to_stac(asset, request)
             response.append(response_asset)
 
         links = generate_pagination_links(request, result_count, limit)
@@ -199,4 +199,4 @@ class AssetSearchClient(BaseAssetSearchClient):
 
         request = kwargs["request"]
 
-        return AssetSerializer.db_to_stac(asset, request)
+        return serializers.AssetSerializer.db_to_stac(asset, request)

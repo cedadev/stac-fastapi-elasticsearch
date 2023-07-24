@@ -11,22 +11,38 @@ __contact__ = "richard.d.smith@stfc.ac.uk"
 from typing import Optional
 from urllib.parse import urljoin
 
-from elasticsearch_dsl import DateRange, Document, GeoShape, Index, InnerDoc
+from elasticsearch_dsl import DateRange, Document, GeoShape, Index, InnerDoc, Search
+from stac_fastapi.elasticsearch.config import settings
 from stac_fastapi.types.links import CollectionLinks, ItemLinks
 from stac_fastapi_asset_search.types import AssetLinks
 from stac_pydantic.shared import MimeTypes
-
-from stac_fastapi.elasticsearch import app
-from stac_fastapi.elasticsearch.config import settings
 
 from .utils import Coordinates, rgetattr
 
 DEFAULT_EXTENT = {"temporal": [[None, None]], "spatial": [[-180, -90, 180, 90]]}
 STAC_VERSION_DEFAULT = "1.0.0"
+CATALOGS = settings.CATALOGS
 
-collections = Index(settings.COLLECTION_INDEX)
-items = Index(settings.ITEM_INDEX)
-assets = Index(settings.ASSET_INDEX)
+
+def indexes_from_catalogs(index_key: str) -> list:
+
+    if index_key in CATALOGS:
+        return [CATALOGS[index_key]]
+
+    indexes = []
+    for catalog in CATALOGS.values():
+        indexes.append(catalog[index_key])
+
+    return indexes
+
+
+COLLECTION_INDEXES = indexes_from_catalogs("COLLECTION_INDEX")
+ITEM_INDEXES = indexes_from_catalogs("ITEM_INDEX")
+ASSET_INDEXES = indexes_from_catalogs("ASSET_INDEX")
+
+collections = Index(COLLECTION_INDEXES[0])
+items = Index(ITEM_INDEXES[0])
+assets = Index(ASSET_INDEXES[0])
 
 
 class Extent(InnerDoc):
@@ -38,10 +54,11 @@ class Extent(InnerDoc):
 class STACDocument(Document):
 
     extensions: list
+    catalogs: dict = CATALOGS
 
-    def __init__(self, **kwargs) -> None:
+    def __init__(self, extensions: list = [], **kwargs) -> None:
         super().__init__(**kwargs)
-        self.extensions = app.extensions
+        self.extensions = extensions
 
     def extension_is_enabled(self, extension: str) -> bool:
         """Check if an api extension is enabled."""
@@ -61,11 +78,32 @@ class STACDocument(Document):
         """
         return getattr(self, "stac_version", STAC_VERSION_DEFAULT)
 
+    @classmethod
+    def search(cls, catalog: str = None, **kwargs) -> Search:
+        """
+        Return Elasticsearch DSL Search
+        """
+        if len(cls.indexes) > 1:
+
+            if catalog and catalog in cls.catalogs:
+                return super().search(
+                    index=cls.catalogs[catalog][cls.index_key], **kwargs
+                )
+
+            return super().search(
+                index=",".join(cls.indexes),
+                **kwargs,
+            )
+
+        return super().search(**kwargs)
+
 
 @assets.document
 class ElasticsearchAsset(STACDocument):
 
     type = "Feature"
+    index_key: str = "ASSET_INDEX"
+    indexes: list = ASSET_INDEXES
 
     @classmethod
     def search(cls, **kwargs):
@@ -163,6 +201,8 @@ class ElasticsearchAsset(STACDocument):
 @items.document
 class ElasticsearchItem(STACDocument):
     type = "Feature"
+    index_key: str = "ITEM_INDEX"
+    indexes: list = ITEM_INDEXES
 
     @classmethod
     def search(cls, **kwargs):
@@ -268,6 +308,8 @@ class ElasticsearchCollection(STACDocument):
     """
 
     type = "Collection"
+    index_key: str = "COLLECTION_INDEX"
+    indexes: list = COLLECTION_INDEXES
 
     @classmethod
     def search(cls, **kwargs):

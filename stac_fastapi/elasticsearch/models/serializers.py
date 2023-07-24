@@ -107,7 +107,7 @@ class ItemSerializer(Serializer):
             bbox=db_model.get_bbox(),
             geometry=None,
             properties=db_model.get_properties(),
-            links=db_model.get_item_links(request.base_url),
+            links=db_model.get_links(request.base_url),
             assets=db_model.get_stac_assets(),
         )
 

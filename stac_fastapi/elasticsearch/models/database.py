@@ -336,11 +336,12 @@ class ElasticsearchAsset(Document):
             return
 
     def get_links(self, base_url, collection_id) -> list:
+
         return AssetLinks(
             base_url=base_url,
             collection_id=collection_id,
-            item_id=db_model.get_item_id(),
-            asset_id=db_model.meta.id,
+            item_id=self.get_item_id(),
+            asset_id=self.get_id(),
         ).create_links()
 
     def to_stac(self) -> Dict:

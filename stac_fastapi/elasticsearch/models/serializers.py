@@ -138,7 +138,7 @@ class CollectionSerializer(Serializer):
             type="Collection",
             id=db_model.get_id(),
             stac_extensions=db_model.get_stac_extensions(),
-            stac_version=db_model.get_stac__version(),
+            stac_version=db_model.get_stac_version(),
             title=db_model.get_title(),
             description=db_model.get_description(),
             keywords=db_model.get_keywords(),
@@ -161,9 +161,8 @@ class CollectionSerializer(Serializer):
             title=stac_data.get("title"),
             description=stac_data.get("description"),
             license=stac_data.get("license"),
-            summaries=stac_data.get("summaries"),
+            properties=stac_data.get("summaries"),
             providers=stac_data.get("providers"),
-            assets=stac_data.get("assets"),
             extent=cls.stac_to_db_extent(stac_data.get("extent")),
             keywords=stac_data.get("keywords"),
         )
@@ -172,7 +171,6 @@ class CollectionSerializer(Serializer):
 
     @staticmethod
     def stac_to_db_extent(extent: Dict[str, Any]) -> Dict[str, Any]:
-        extent = extent
         temporal = extent.get("temporal")
         if temporal:
             for k, d in temporal.items():

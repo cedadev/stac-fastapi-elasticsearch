@@ -15,14 +15,13 @@ services:
     ports:
       - 8081:8081
     volumes:
-    - ./stac_fastapi:/app/stac_fastapi
-    - ./scripts:/app/scripts
-    - ./conf:/app/conf
-    - ./tests:/app/tests
+      - ./stac_fastapi:/app/stac_fastapi
+      - ./scripts:/app/scripts
+      - ./conf:/app/conf
+      - ./tests:/app/tests
     depends_on:
       - database
-    command:
-      bash -c "./scripts/wait-for-it.sh database:9200 -t 60 && python -m stac_fastapi.elasticsearch.app"
+    command: bash -c "./scripts/wait-for-it.sh database:9200 -t 60 && python -m stac_fastapi.elasticsearch.run"
   database:
     container_name: stac-elasticsearch
     image: docker.elastic.co/elasticsearch/elasticsearch:7.14.2
@@ -38,10 +37,9 @@ services:
   loadsample-elasticsearch:
     image: cedadev/stac-fastapi-elasticsearch
     volumes:
-    - ./stac_fastapi:/app/stac_fastapi
-    - ./scripts:/app/scripts
-    command:
-      bash -c "./scripts/wait-for-it.sh database:9200 -t 60 && python /app/scripts/ingest_test_data.py --host http://database:9200"
+      - ./stac_fastapi:/app/stac_fastapi
+      - ./scripts:/app/scripts
+    command: bash -c "./scripts/wait-for-it.sh database:9200 -t 60 && python /app/scripts/ingest_test_data.py --host http://database:9200"
     depends_on:
       - database
       - app-elasticsearch

@@ -12,12 +12,10 @@ from typing import Optional
 from urllib.parse import urljoin
 
 from elasticsearch_dsl import DateRange, Document, GeoShape, Index, InnerDoc, Search
+from stac_fastapi.elasticsearch.config import settings
 from stac_fastapi.types.links import CollectionLinks, ItemLinks
 from stac_fastapi_asset_search.types import AssetLinks
 from stac_pydantic.shared import MimeTypes
-
-from stac_fastapi.elasticsearch import app
-from stac_fastapi.elasticsearch.config import settings
 
 from .utils import Coordinates, rgetattr
 
@@ -58,9 +56,9 @@ class STACDocument(Document):
     extensions: list
     catalogs: dict = CATALOGS
 
-    def __init__(self, **kwargs) -> None:
+    def __init__(self, extensions=extensions, **kwargs) -> None:
         super().__init__(**kwargs)
-        self.extensions = app.extensions
+        self.extensions = extensions
 
     def extension_is_enabled(self, extension: str) -> bool:
         """Check if an api extension is enabled."""

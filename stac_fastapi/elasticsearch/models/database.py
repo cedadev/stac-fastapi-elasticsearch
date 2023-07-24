@@ -56,7 +56,7 @@ class STACDocument(Document):
     extensions: list
     catalogs: dict = CATALOGS
 
-    def __init__(self, extensions=extensions, **kwargs) -> None:
+    def __init__(self, extensions: list = [], **kwargs) -> None:
         super().__init__(**kwargs)
         self.extensions = extensions
 

@@ -70,6 +70,7 @@ api = StacApi(
         session=session,
         extensions=extensions,
         item_table=database.ElasticsearchItem(extensions=extensions),
+        collection_table=database.ElasticsearchCollection(extensions=extensions),
     ),
     pagination_extension=PaginationExtension,
     description=settings.STAC_DESCRIPTION,

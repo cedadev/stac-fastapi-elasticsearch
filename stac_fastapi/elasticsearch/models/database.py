@@ -68,7 +68,7 @@ class STACDocument(Document):
         return False
 
     def get_id(self) -> str:
-        return self.get_id()
+        return self.meta.id
 
     def get_stac_extensions(self) -> list:
         """
@@ -76,9 +76,9 @@ class STACDocument(Document):
         """
         return getattr(self, "stac_extensions", [])
 
-    def get_stac_version(self) -> list:
+    def get_stac_version(self) -> str:
         """
-        Return STAC extensions
+        Return STAC version
         """
         return getattr(self, "stac_version", STAC_VERSION_DEFAULT)
 
@@ -333,6 +333,223 @@ class ElasticsearchCollection(STACDocument):
         properties = getattr(self, "properties", {})
 
         return properties.to_dict() if not isinstance(properties, dict) else {}
+
+    def get_extent(self) -> dict:
+        """
+        Takes the elastic-dsl Document and extracts the
+        extent information from it.
+
+        """
+        extent = getattr(self, "extent", DEFAULT_EXTENT)
+
+        try:
+            # Throw away inclusivity flag with _
+            lower, _ = extent.temporal.lower
+            upper, _ = extent.temporal.upper
+
+            lower = lower.isoformat() if lower else None
+            upper = upper.isoformat() if upper else None
+        except AttributeError:
+            lower, upper = None, None
+
+        try:
+            coordinates = Coordinates.from_geojson(extent.spatial.coordinates)
+        except AttributeError:
+            coordinates = Coordinates.from_wgs84(DEFAULT_EXTENT["spatial"][0])
+
+        return dict(
+            temporal=dict(interval=[[lower, upper]]),
+            spatial=dict(bbox=[coordinates.to_wgs84()]),
+        )
+
+    def get_keywords(self) -> list:
+        return getattr(self, "keywords", [])
+
+    def get_title(self) -> str:
+        return getattr(self, "title", "")
+
+    def get_description(self) -> str:
+        return getattr(self, "description", "")
+
+    def get_license(self) -> str:
+        return getattr(self, "license", "")
+
+    def get_providers(self) -> list:
+        return getattr(self, "providers", [])
+
+    def get_links(self, base_url: str) -> list:
+        """
+        Returns list of links
+        """
+        collection_links = CollectionLinks(
+            base_url=base_url,
+            collection_id=self.get_id(),
+        ).create_links()
+
+        if self.extension_is_enabled("FilterExtension"):
+            collection_links.append(
+                {
+                    "rel": "https://www.opengis.net/def/rel/ogc/1.0/queryables",
+                    "type": MimeTypes.json,
+                    "href": urljoin(
+                        base_url,
+                        f"collections/{self.get_id()}/queryables",
+                    ),
+                }
+            )
+
+        return collection_links
+
+
+@items.document
+class ElasticsearchEOItem(STACDocument):
+    type = "Feature"
+    index_key: str = "ITEM_INDEX"
+    indexes: list = ITEM_INDEXES
+
+    @classmethod
+    def search(cls, **kwargs):
+        return super().search(**kwargs)
+
+    @classmethod
+    def _matches(cls, hit):
+        # override _matches to match indices in a pattern instead of just ALIAS
+        # hit is the raw dict as returned by elasticsearch
+        return True
+
+    def get_stac_assets(self) -> dict:
+        """
+        Return stac assets
+        """
+        file = getattr(self, "file", {})
+        directory = getattr(file, "directory", "")
+        data_file = getattr(file, "data_file", "")
+        metadata_file = getattr(file, "metadata_file", "")
+        quicklook_file = getattr(file, "quicklook_file", "")
+
+        assets = {}
+
+        if data_file:
+            assets["data_file"] = {
+                "href": f"{settings.posix_download_url}{directory}{data_file}",
+                "title": data_file,
+                "type": "application/zip",
+                "roles": ["data"],
+            }
+
+        if metadata_file:
+            assets["metadata_file"] = {
+                "href": f"{settings.posix_download_url}{directory}{metadata_file}",
+                "title": metadata_file,
+                "type": "application/xml",
+                "roles": ["metadata"],
+            }
+
+        if quicklook_file:
+            assets["quicklook_file"] = {
+                "href": f"{settings.posix_download_url}{directory}{quicklook_file}",
+                "title": quicklook_file,
+                "type": "image/png",
+                "roles": ["thumbnail"],
+            }
+
+        return assets
+
+    def get_properties(self) -> dict:
+        """
+        Return properties
+        """
+        properties = getattr(self, "misc", {})
+
+        if not isinstance(properties, dict):
+            properties.to_dict()
+
+        properties["size"] = rgetattr(self, "file.size")
+
+        if hasattr(self, "temporal"):
+            if "start_datetime" not in properties or "end_datetime" not in properties:
+                properties["datetime"] = None
+                properties["start_datetime"] = rgetattr(self, "temporal.start_time")
+                properties["end_datetime"] = rgetattr(self, "temporal.end_time")
+
+        return properties.to_dict() if not isinstance(properties, dict) else {}
+
+    def get_bbox(self):
+        """
+        Return a WGS84 formatted bbox
+
+        :return:
+        """
+
+        try:
+            coordinates = rgetattr(self, "spatial.geometries.search.coordinates")
+        except AttributeError:
+            return
+
+        return
+
+    def get_geometry(self):
+        return rgetattr(self, "spatial.geometries.full_search").to_dict()
+
+    def get_collection_id(self) -> str:
+        """
+        Return the collection id
+        """
+        return rgetattr(self, "misc.platform.Satellite")
+
+    def get_links(self, base_url: str) -> list:
+        """
+        Returns list of links
+        """
+        links = ItemLinks(
+            base_url=str(base_url),
+            collection_id=self.get_collection_id(),
+            item_id=self.get_id(),
+        ).create_links()
+
+        if self.extension_is_enabled("AssetSearchExtension"):
+            links.append(
+                dict(
+                    rel="assets",
+                    type=MimeTypes.json,
+                    href=urljoin(
+                        base_url,
+                        f"collections/{self.get_collection_id()}/items/{self.get_id()}/assets",
+                    ),
+                )
+            )
+
+        return links
+
+
+@collections.document
+class ElasticsearchEOCollection(STACDocument):
+    """
+    Collection class
+    """
+
+    type = "FeatureCollection"
+    index_key: str = "COLLECTION_INDEX"
+    indexes: list = COLLECTION_INDEXES
+
+    @classmethod
+    def search(cls, **kwargs):
+        return super().search(**kwargs).filter("term", type="collection")
+
+    @classmethod
+    def _matches(cls, hit):
+        # override _matches to match indices in a pattern instead of just ALIAS
+        # hit is the raw dict as returned by elasticsearch
+        return True
+
+    def get_summaries(self) -> Optional[dict]:
+        """
+        Turns the elastic-dsl AttrDict into a dict or None
+
+        """
+        properties = getattr(self, "properties", {})
+
+        return properties if isinstance(properties, dict) else properties.to_dict()
 
     def get_extent(self) -> dict:
         """

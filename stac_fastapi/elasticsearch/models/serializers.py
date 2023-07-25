@@ -95,7 +95,7 @@ class AssetSerializer(Serializer):
 class ItemSerializer(Serializer):
     @classmethod
     def db_to_stac(
-        cls, db_model: database.ElasticsearchItem, request: Response
+        cls, db_model: database.ElasticsearchEOItem, request: Response
     ) -> stac_types.Item:
 
         return stac_types.Item(
@@ -105,7 +105,7 @@ class ItemSerializer(Serializer):
             id=db_model.get_id(),
             collection=db_model.get_collection_id(),
             bbox=db_model.get_bbox(),
-            geometry=None,
+            geometry=db_model.get_geometry(),
             properties=db_model.get_properties(),
             links=db_model.get_links(request.base_url),
             assets=db_model.get_stac_assets(),

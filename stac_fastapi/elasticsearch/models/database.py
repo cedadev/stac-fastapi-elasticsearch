@@ -11,7 +11,7 @@ __contact__ = "richard.d.smith@stfc.ac.uk"
 from typing import Optional
 from urllib.parse import urljoin
 
-from elasticsearch_dsl import DateRange, Document, GeoShape, Index, InnerDoc, Search
+from elasticsearch_dsl import A, DateRange, Document, GeoShape, Index, InnerDoc, Search
 from stac_fastapi.types.links import CollectionLinks, ItemLinks
 from stac_fastapi_asset_search.types import AssetLinks
 from stac_pydantic.shared import MimeTypes
@@ -311,13 +311,13 @@ class ElasticsearchCollection(STACDocument):
     Collection class
     """
 
-    type = "Collection"
+    type = "FeatureCollection"
     index_key: str = "COLLECTION_INDEX"
     indexes: list = COLLECTION_INDEXES
 
     @classmethod
     def search(cls, **kwargs):
-        return super().search(**kwargs).filter("term", type="collection")
+        return super().search(**kwargs)
 
     @classmethod
     def _matches(cls, hit):
@@ -431,7 +431,7 @@ class ElasticsearchEOItem(STACDocument):
 
         if data_file:
             assets["data_file"] = {
-                "href": f"{settings.posix_download_url}{directory}{data_file}",
+                "href": f"{settings.posix_download_url}{directory}/{data_file}",
                 "title": data_file,
                 "type": "application/zip",
                 "roles": ["data"],
@@ -439,7 +439,7 @@ class ElasticsearchEOItem(STACDocument):
 
         if metadata_file:
             assets["metadata_file"] = {
-                "href": f"{settings.posix_download_url}{directory}{metadata_file}",
+                "href": f"{settings.posix_download_url}{directory}/{metadata_file}",
                 "title": metadata_file,
                 "type": "application/xml",
                 "roles": ["metadata"],
@@ -447,7 +447,7 @@ class ElasticsearchEOItem(STACDocument):
 
         if quicklook_file:
             assets["quicklook_file"] = {
-                "href": f"{settings.posix_download_url}{directory}{quicklook_file}",
+                "href": f"{settings.posix_download_url}{directory}/{quicklook_file}",
                 "title": quicklook_file,
                 "type": "image/png",
                 "roles": ["thumbnail"],
@@ -465,6 +465,7 @@ class ElasticsearchEOItem(STACDocument):
             properties.to_dict()
 
         properties["size"] = rgetattr(self, "file.size")
+        properties["location"] = rgetattr(self, "file.location")
 
         if hasattr(self, "temporal"):
             if "start_datetime" not in properties or "end_datetime" not in properties:
@@ -534,7 +535,222 @@ class ElasticsearchEOCollection(STACDocument):
 
     @classmethod
     def search(cls, **kwargs):
-        return super().search(**kwargs).filter("term", type="collection")
+
+        agg = A("terms", field="misc.platform.Satellite.raw")
+
+        # orbit_info
+        agg.bucket(
+            "Cycle Number",
+            "terms",
+            field="misc.orbit_info.Cycle Number.keyword",
+        )
+        agg.bucket(
+            "Pass Direction",
+            "terms",
+            field="misc.orbit_info.Pass Direction.keyword",
+        )
+        agg.bucket(
+            "Phase Identifier",
+            "terms",
+            field="misc.orbit_info.Phase Identifier.keyword",
+        )
+        agg.bucket(
+            "Start Orbit Number",
+            "terms",
+            field="misc.orbit_info.Start Orbit Number.keyword",
+        )
+        agg.bucket(
+            "Start Relative Orbit Number",
+            "terms",
+            field="misc.orbit_info.Start Relative Orbit Number.keyword",
+        )
+        agg.bucket(
+            "Stop Orbit Number",
+            "terms",
+            field="misc.orbit_info.Stop Orbit Number.keyword",
+        )
+        agg.bucket(
+            "Stop Relative Orbit Number",
+            "terms",
+            field="misc.orbit_info.Stop Relative Orbit Number.keyword",
+        )
+
+        # platform
+        agg.bucket("Family", "terms", field="misc.platform.Family.keyword")
+        agg.bucket(
+            "Instrument Abbreviation",
+            "terms",
+            field="misc.platform.Instrument Abbreviation.keyword",
+        )
+        agg.bucket(
+            "Instrument Family Name",
+            "terms",
+            field="misc.platform.Instrument Family Name.keyword",
+        )
+        agg.bucket(
+            "Instrument Mode",
+            "terms",
+            field="misc.platform.Instrument Mode.keyword",
+        )
+        agg.bucket(
+            "Mission",
+            "terms",
+            field="misc.platform.Mission.keyword",
+        )
+        agg.bucket(
+            "NSSDC Identifier",
+            "terms",
+            field="misc.platform.NSSDC Identifier.keyword",
+        )
+        agg.bucket(
+            "Platform Family Name",
+            "terms",
+            field="misc.platform.Platform Family Name.keyword",
+        )
+        agg.bucket(
+            "Platform Number",
+            "terms",
+            field="misc.platform.Platform Number.keyword",
+        )
+
+        # product_info
+        agg.bucket(
+            "Polarisation",
+            "terms",
+            field="misc.product_info.Polarisation.keyword",
+        )
+        agg.bucket(
+            "Product Class",
+            "terms",
+            field="misc.product_info.Product Class.keyword",
+        )
+        agg.bucket(
+            "Product Class Description",
+            "terms",
+            field="misc.product_info.Product Class Description.keyword",
+        )
+        agg.bucket(
+            "Product Composition",
+            "terms",
+            field="misc.product_info.Product Composition.keyword",
+        )
+        agg.bucket(
+            "Product Type",
+            "terms",
+            field="misc.product_info.Product Type.keyword",
+        )
+        agg.bucket(
+            "Resolution",
+            "terms",
+            field="misc.product_info.Resolution.keyword",
+        )
+        agg.bucket(
+            "Timeliness Category",
+            "terms",
+            field="misc.product_info.Timeliness Category.keyword",
+        )
+
+        # quality_info
+        agg.bucket(
+            "Min Cloud Coverage Assessment",
+            "min",
+            field="misc.quality_info.Cloud Coverage Assessment",
+        )
+        agg.bucket(
+            "Max Cloud Coverage Assessment",
+            "max",
+            field="misc.quality_info.Cloud Coverage Assessment",
+        )
+        agg.bucket(
+            "Average Cloud Coverage Assessment",
+            "avg",
+            field="misc.quality_info.Cloud Coverage Assessment",
+        )
+
+        # solar_zenith
+        # nadir
+        agg.bucket("nadir_min", "min", field="misc.solar_zenith.nadir.min")
+        agg.bucket("nadir_max", "max", field="misc.solar_zenith.nadir.max")
+        # oblique
+        agg.bucket("oblique_min", "min", field="misc.solar_zenith.oblique.min")
+        agg.bucket("oblique_max", "max", field="misc.solar_zenith.oblique.max")
+
+        # solar_zenith_angle
+        agg.bucket("solar_zenith_angle_min", "min", field="misc.solar_zenith_angle.min")
+        agg.bucket("solar_zenith_angle_max", "max", field="misc.solar_zenith_angle.max")
+
+        # spatial
+        # VERY SLOW
+        # agg.bucket(
+        #     "geo_extent",
+        #     "scripted_metric",
+        #     init_script="state.x = []; state.y = []",
+        #     map_script="for (c in params['_source']['spatial']['geometries']['display']['coordinates'][0]) { state.x.add(c[0]); state.y.add(c[1]) }",
+        #     combine_script="double min_x = 500, max_x = -500, min_y = 500, max_y = -500; for (t in state.x) { if (t < min_x) {min_x=t} else if (t > max_x) {max_x=t} } for (t in state.y) { if (t < min_y) {min_y=t} else if (t > max_y) {max_y=t} } return [min_x, max_x, min_y, max_y]",
+        #     reduce_script="double min_x = 500, max_x = -500, min_y = 500, max_y = -500; for (a in states) { if (a[0] < min_x) {min_x=a[0]} if (a[1] > max_x) {max_x=a[1]} if (a[2] < min_y) {min_y=a[2]} if (a[3] > max_y) {max_y=a[3]} } return [min_x, max_x, min_y, max_y]",
+        # )
+
+        # temporal
+        agg.bucket("temporal_min", "min", field="temporal.start_time")
+        agg.bucket("temporal_max", "max", field="temporal.end_time")
+
+        search = super().search(**kwargs)
+
+        search.aggs.bucket("satallites", agg)
+
+        response = search.execute()
+
+        for aggregation in response.aggregations.satallites.buckets:
+
+            # try:
+            #     coordinates = Coordinates(
+            #         aggregation.geo_extent.value[0],
+            #         aggregation.geo_extent.value[1],
+            #         aggregation.geo_extent.value[2],
+            #         aggregation.geo_extent.value[3],
+            #     )
+            # except AttributeError as e:
+            # coordinates = Coordinates.from_wgs84(DEFAULT_EXTENT["spatial"][0])
+
+            collection = {
+                "id": aggregation.key,
+                "item_count": aggregation.doc_count,
+                "extent": {
+                    "temporal": {
+                        "interval": [
+                            [
+                                aggregation.temporal_min.value_as_string,
+                                aggregation.temporal_min.value_as_string,
+                            ]
+                        ]
+                    },
+                    "bbox": DEFAULT_EXTENT["spatial"],
+                },
+                "properties": {},
+            }
+
+            # think there's a cleaner way to do this
+            for key, term in aggregation.to_dict().items():
+
+                if isinstance(term, dict):
+
+                    if "value" in term and "value_as_string" not in term:
+                        collection[key] = term["value"]
+
+                    elif "buckets" in term and term["buckets"]:
+                        collection["properties"][key] = [
+                            bucket["key"] for bucket in term["buckets"]
+                        ]
+
+            yield ElasticsearchEOCollection(
+                meta={"id": collection.get("id")},
+                id=collection.get("id"),
+                title=collection.get("id"),
+                description=collection.get("description"),
+                license=collection.get("license"),
+                properties=collection.get("properties", {}),
+                extent=collection.get("extent", {}),
+            )
 
     @classmethod
     def _matches(cls, hit):
@@ -547,9 +763,10 @@ class ElasticsearchEOCollection(STACDocument):
         Turns the elastic-dsl AttrDict into a dict or None
 
         """
-        properties = getattr(self, "properties", {})
+        if hasattr(self, "properties"):
+            return getattr(self, "properties").to_dict()
 
-        return properties if isinstance(properties, dict) else properties.to_dict()
+        return {}
 
     def get_extent(self) -> dict:
         """
@@ -557,27 +774,10 @@ class ElasticsearchEOCollection(STACDocument):
         extent information from it.
 
         """
-        extent = getattr(self, "extent", DEFAULT_EXTENT)
+        if hasattr(self, "extent"):
+            return getattr(self, "extent").to_dict()
 
-        try:
-            # Throw away inclusivity flag with _
-            lower, _ = extent.temporal.lower
-            upper, _ = extent.temporal.upper
-
-            lower = lower.isoformat() if lower else None
-            upper = upper.isoformat() if upper else None
-        except AttributeError:
-            lower, upper = None, None
-
-        try:
-            coordinates = Coordinates.from_geojson(extent.spatial.coordinates)
-        except AttributeError:
-            coordinates = Coordinates.from_wgs84(DEFAULT_EXTENT["spatial"][0])
-
-        return dict(
-            temporal=dict(interval=[[lower, upper]]),
-            spatial=dict(bbox=[coordinates.to_wgs84()]),
-        )
+        return DEFAULT_EXTENT
 
     def get_keywords(self) -> list:
         return getattr(self, "keywords", [])

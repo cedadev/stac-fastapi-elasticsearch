@@ -135,7 +135,7 @@ class CollectionSerializer(Serializer):
     ) -> stac_types.Collection:
 
         return stac_types.Collection(
-            type="Collection",
+            type="FeatureCollection",
             id=db_model.get_id(),
             stac_extensions=db_model.get_stac_extensions(),
             stac_version=db_model.get_stac_version(),
@@ -146,7 +146,7 @@ class CollectionSerializer(Serializer):
             providers=db_model.get_providers(),
             summaries=db_model.get_summaries(),
             extent=db_model.get_extent(),
-            links=db_model.get_links(request.base_url),
+            links=db_model.get_links(str(request.base_url)),
         )
 
     @classmethod

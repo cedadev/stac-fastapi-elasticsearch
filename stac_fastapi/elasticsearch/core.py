@@ -77,8 +77,8 @@ class CoreCrudClient(BaseCoreClient):
 
     def post_search(
         self,
-        request: StarletteRequest,
         search_request: Type[BaseSearchPostRequest],
+        request: StarletteRequest,
         **kwargs,
     ) -> stac_types.ItemCollection:
         """Cross catalog search (POST).

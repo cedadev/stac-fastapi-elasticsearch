@@ -592,120 +592,121 @@ class ElasticsearchEOCollection(STACDocument):
             field="misc.orbit_info.Stop Relative Orbit Number.keyword",
         )
 
-        # # platform
-        # agg.bucket("Family", "terms", field="misc.platform.Family.keyword")
-        # agg.bucket(
-        #     "Instrument Abbreviation",
-        #     "terms",
-        #     field="misc.platform.Instrument Abbreviation.keyword",
-        # )
-        # agg.bucket(
-        #     "Instrument Family Name",
-        #     "terms",
-        #     field="misc.platform.Instrument Family Name.keyword",
-        # )
-        # agg.bucket(
-        #     "Instrument Mode",
-        #     "terms",
-        #     field="misc.platform.Instrument Mode.keyword",
-        # )
-        # agg.bucket(
-        #     "Mission",
-        #     "terms",
-        #     field="misc.platform.Mission.keyword",
-        # )
-        # agg.bucket(
-        #     "NSSDC Identifier",
-        #     "terms",
-        #     field="misc.platform.NSSDC Identifier.keyword",
-        # )
-        # agg.bucket(
-        #     "Platform Family Name",
-        #     "terms",
-        #     field="misc.platform.Platform Family Name.keyword",
-        # )
-        # agg.bucket(
-        #     "Platform Number",
-        #     "terms",
-        #     field="misc.platform.Platform Number.keyword",
-        # )
+        # platform
+        agg.bucket("Family", "terms", field="misc.platform.Family.keyword")
+        agg.bucket(
+            "Instrument Abbreviation",
+            "terms",
+            field="misc.platform.Instrument Abbreviation.keyword",
+        )
+        agg.bucket(
+            "Instrument Family Name",
+            "terms",
+            field="misc.platform.Instrument Family Name.keyword",
+        )
+        agg.bucket(
+            "Instrument Mode",
+            "terms",
+            field="misc.platform.Instrument Mode.keyword",
+        )
+        agg.bucket(
+            "Mission",
+            "terms",
+            field="misc.platform.Mission.keyword",
+        )
+        agg.bucket(
+            "NSSDC Identifier",
+            "terms",
+            field="misc.platform.NSSDC Identifier.keyword",
+        )
+        agg.bucket(
+            "Platform Family Name",
+            "terms",
+            field="misc.platform.Platform Family Name.keyword",
+        )
+        agg.bucket(
+            "Platform Number",
+            "terms",
+            field="misc.platform.Platform Number.keyword",
+        )
 
-        # # product_info
-        # agg.bucket(
-        #     "Polarisation",
-        #     "terms",
-        #     field="misc.product_info.Polarisation.keyword",
-        # )
-        # agg.bucket(
-        #     "Product Class",
-        #     "terms",
-        #     field="misc.product_info.Product Class.keyword",
-        # )
-        # agg.bucket(
-        #     "Product Class Description",
-        #     "terms",
-        #     field="misc.product_info.Product Class Description.keyword",
-        # )
-        # agg.bucket(
-        #     "Product Composition",
-        #     "terms",
-        #     field="misc.product_info.Product Composition.keyword",
-        # )
-        # agg.bucket(
-        #     "Product Type",
-        #     "terms",
-        #     field="misc.product_info.Product Type.keyword",
-        # )
-        # agg.bucket(
-        #     "Resolution",
-        #     "terms",
-        #     field="misc.product_info.Resolution.keyword",
-        # )
-        # agg.bucket(
-        #     "Timeliness Category",
-        #     "terms",
-        #     field="misc.product_info.Timeliness Category.keyword",
-        # )
+        # product_info
+        agg.bucket(
+            "Polarisation",
+            "terms",
+            field="misc.product_info.Polarisation.keyword",
+        )
+        agg.bucket(
+            "Product Class",
+            "terms",
+            field="misc.product_info.Product Class.keyword",
+        )
+        agg.bucket(
+            "Product Class Description",
+            "terms",
+            field="misc.product_info.Product Class Description.keyword",
+        )
+        agg.bucket(
+            "Product Composition",
+            "terms",
+            field="misc.product_info.Product Composition.keyword",
+        )
+        agg.bucket(
+            "Product Type",
+            "terms",
+            field="misc.product_info.Product Type.keyword",
+        )
+        agg.bucket(
+            "Resolution",
+            "terms",
+            field="misc.product_info.Resolution.keyword",
+        )
+        agg.bucket(
+            "Timeliness Category",
+            "terms",
+            field="misc.product_info.Timeliness Category.keyword",
+        )
 
-        # # quality_info
-        # agg.bucket(
-        #     "Min Cloud Coverage Assessment",
-        #     "min",
-        #     field="misc.quality_info.Cloud Coverage Assessment",
-        # )
-        # agg.bucket(
-        #     "Max Cloud Coverage Assessment",
-        #     "max",
-        #     field="misc.quality_info.Cloud Coverage Assessment",
-        # )
-        # agg.bucket(
-        #     "Average Cloud Coverage Assessment",
-        #     "avg",
-        #     field="misc.quality_info.Cloud Coverage Assessment",
-        # )
+        # quality_info
+        agg.bucket(
+            "Min Cloud Coverage Assessment",
+            "min",
+            field="misc.quality_info.Cloud Coverage Assessment",
+        )
+        agg.bucket(
+            "Max Cloud Coverage Assessment",
+            "max",
+            field="misc.quality_info.Cloud Coverage Assessment",
+        )
+        agg.bucket(
+            "Average Cloud Coverage Assessment",
+            "avg",
+            field="misc.quality_info.Cloud Coverage Assessment",
+        )
 
-        # # solar_zenith
-        # # nadir
-        # agg.bucket("nadir_min", "min", field="misc.solar_zenith.nadir.min")
-        # agg.bucket("nadir_max", "max", field="misc.solar_zenith.nadir.max")
-        # # oblique
-        # agg.bucket("oblique_min", "min", field="misc.solar_zenith.oblique.min")
-        # agg.bucket("oblique_max", "max", field="misc.solar_zenith.oblique.max")
+        # solar_zenith
+        # nadir
+        agg.bucket("nadir_min", "min", field="misc.solar_zenith.nadir.min")
+        agg.bucket("nadir_max", "max", field="misc.solar_zenith.nadir.max")
+        # oblique
+        agg.bucket("oblique_min", "min", field="misc.solar_zenith.oblique.min")
+        agg.bucket("oblique_max", "max", field="misc.solar_zenith.oblique.max")
 
-        # # solar_zenith_angle
-        # agg.bucket("solar_zenith_angle_min", "min", field="misc.solar_zenith_angle.min")
-        # agg.bucket("solar_zenith_angle_max", "max", field="misc.solar_zenith_angle.max")
+        # solar_zenith_angle
+        agg.bucket("solar_zenith_angle_min", "min", field="misc.solar_zenith_angle.min")
+        agg.bucket("solar_zenith_angle_max", "max", field="misc.solar_zenith_angle.max")
 
         # spatial
         # VERY SLOW
-        # agg.bucket(
-        #     "geo_extent",
-        #     "scripted_metric",
-        #     init_script="state.x = []; state.y = []",
-        #     map_script="for (c in params['_source']['spatial']['geometries']['display']['coordinates'][0]) { state.x.add(c[0]); state.y.add(c[1]) }",
-        #     combine_script="double min_x = 500, max_x = -500, min_y = 500, max_y = -500; for (t in state.x) { if (t < min_x) {min_x=t} else if (t > max_x) {max_x=t} } for (t in state.y) { if (t < min_y) {min_y=t} else if (t > max_y) {max_y=t} } return [min_x, max_x, min_y, max_y]",
-        #     reduce_script="double min_x = 500, max_x = -500, min_y = 500, max_y = -500; for (a in states) { if (a[0] < min_x) {min_x=a[0]} if (a[1] > max_x) {max_x=a[1]} if (a[2] < min_y) {min_y=a[2]} if (a[3] > max_y) {max_y=a[3]} } return [min_x, max_x, min_y, max_y]",
-        # )
+        # if id:
+        #     agg.bucket(
+        #         "geo_extent",
+        #         "scripted_metric",
+        #         init_script="state.x = []; state.y = []",
+        #         map_script="for (c in params['_source']['spatial']['geometries']['display']['coordinates'][0]) { state.x.add(c[0]); state.y.add(c[1]) }",
+        #         combine_script="double min_x = 500, max_x = -500, min_y = 500, max_y = -500; for (t in state.x) { if (t < min_x) {min_x=t} else if (t > max_x) {max_x=t} } for (t in state.y) { if (t < min_y) {min_y=t} else if (t > max_y) {max_y=t} } return [min_x, max_x, min_y, max_y]",
+        #         reduce_script="double min_x = 500, max_x = -500, min_y = 500, max_y = -500; for (a in states) { if (a[0] < min_x) {min_x=a[0]} if (a[1] > max_x) {max_x=a[1]} if (a[2] < min_y) {min_y=a[2]} if (a[3] > max_y) {max_y=a[3]} } return [min_x, max_x, min_y, max_y]",
+        #     )
 
         # temporal
         agg.bucket("temporal_min", "min", field="temporal.start_time")
@@ -729,30 +730,26 @@ class ElasticsearchEOCollection(STACDocument):
             #         aggregation.geo_extent.value[2],
             #         aggregation.geo_extent.value[3],
             #     )
-            # except AttributeError as e:
-            # coordinates = Coordinates.from_wgs84(DEFAULT_EXTENT["spatial"][0])
+            # except AttributeError:
+            #     coordinates = Coordinates.from_wgs84(DEFAULT_EXTENT["spatial"][0])
 
             collection = {
                 "id": aggregation.key,
                 "item_count": aggregation.doc_count,
-                # "extent": DEFAULT_EXTENT,
                 "extent": {
-                    "temporal": {"interval": [[None, None]]},
-                    "spatial": {"bbox": [[-180, -90, 180, 90]]},
+                    "temporal": {
+                        "interval": [
+                            [
+                                aggregation.temporal_min.value_as_string,
+                                aggregation.temporal_min.value_as_string,
+                            ]
+                        ]
+                    },
+                    "spatial": {
+                        # "bbox": coordinates.to_wgs84()],
+                        "bbox": DEFAULT_EXTENT["spatial"],
+                    },
                 },
-                # "extent": {
-                #     "temporal": {
-                #         "interval": [
-                #             [
-                #                 aggregation.temporal_min.value_as_string,
-                #                 aggregation.temporal_min.value_as_string,
-                #             ]
-                #         ]
-                #     },
-                #     "spatial": {
-                #         "bbox": DEFAULT_EXTENT["spatial"],
-                #     },
-                # },
                 "properties": {},
             }
 

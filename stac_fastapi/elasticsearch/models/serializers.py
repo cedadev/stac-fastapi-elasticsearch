@@ -135,7 +135,7 @@ class CollectionSerializer(Serializer):
     ) -> stac_types.Collection:
 
         return stac_types.Collection(
-            type="FeatureCollection",
+            type="Collection",
             id=db_model.get_id(),
             stac_extensions=db_model.get_stac_extensions(),
             stac_version=db_model.get_stac_version(),

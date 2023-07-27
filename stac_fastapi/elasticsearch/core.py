@@ -236,7 +236,7 @@ class CoreCrudClient(BaseCoreClient):
                 )
             ) from exc
 
-        if not getattr(item, "collection_id", None) == collection_id:
+        if item.get_collection_id() != collection_id:
             raise (
                 HTTPException(
                     status_code=404,
@@ -337,7 +337,7 @@ class CoreCrudClient(BaseCoreClient):
 
         items = self.item_table.search(
             catalog=request.get("root_path").strip("/")
-        ).filter("term", collection_id=collection_id)
+        ).filter("term", misc__platform__Satellite__raw=collection_id)
         result_count = items.count()
 
         items = items[(page - 1) * limit : page * limit]

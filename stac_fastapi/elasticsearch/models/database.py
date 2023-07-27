@@ -11,6 +11,7 @@ __contact__ = "richard.d.smith@stfc.ac.uk"
 from typing import Optional
 from urllib.parse import urljoin
 
+from elasticsearch import NotFoundError
 from elasticsearch_dsl import A, DateRange, Document, GeoShape, Index, InnerDoc, Search
 from stac_fastapi.types.links import CollectionLinks, ItemLinks
 from stac_fastapi_asset_search.types import AssetLinks
@@ -417,6 +418,16 @@ class ElasticsearchEOItem(STACDocument):
         # hit is the raw dict as returned by elasticsearch
         return True
 
+    def get(self, id, **kwargs):
+        "HERE"
+        try:
+            search = self.search().query("term", _id=id)
+            response = search.execute()
+            print(response)
+            return response.hits[0]
+        except StopIteration:
+            raise NotFoundError
+
     def get_stac_assets(self) -> dict:
         """
         Return stac assets
@@ -533,8 +544,14 @@ class ElasticsearchEOCollection(STACDocument):
     index_key: str = "COLLECTION_INDEX"
     indexes: list = COLLECTION_INDEXES
 
+    def get(self, id, **kwargs):
+        try:
+            return next(self.search(id=id))
+        except StopIteration:
+            raise NotFoundError
+
     @classmethod
-    def search(cls, **kwargs):
+    def search(cls, id: str = None, **kwargs):
 
         agg = A("terms", field="misc.platform.Satellite.raw")
 
@@ -575,109 +592,109 @@ class ElasticsearchEOCollection(STACDocument):
             field="misc.orbit_info.Stop Relative Orbit Number.keyword",
         )
 
-        # platform
-        agg.bucket("Family", "terms", field="misc.platform.Family.keyword")
-        agg.bucket(
-            "Instrument Abbreviation",
-            "terms",
-            field="misc.platform.Instrument Abbreviation.keyword",
-        )
-        agg.bucket(
-            "Instrument Family Name",
-            "terms",
-            field="misc.platform.Instrument Family Name.keyword",
-        )
-        agg.bucket(
-            "Instrument Mode",
-            "terms",
-            field="misc.platform.Instrument Mode.keyword",
-        )
-        agg.bucket(
-            "Mission",
-            "terms",
-            field="misc.platform.Mission.keyword",
-        )
-        agg.bucket(
-            "NSSDC Identifier",
-            "terms",
-            field="misc.platform.NSSDC Identifier.keyword",
-        )
-        agg.bucket(
-            "Platform Family Name",
-            "terms",
-            field="misc.platform.Platform Family Name.keyword",
-        )
-        agg.bucket(
-            "Platform Number",
-            "terms",
-            field="misc.platform.Platform Number.keyword",
-        )
+        # # platform
+        # agg.bucket("Family", "terms", field="misc.platform.Family.keyword")
+        # agg.bucket(
+        #     "Instrument Abbreviation",
+        #     "terms",
+        #     field="misc.platform.Instrument Abbreviation.keyword",
+        # )
+        # agg.bucket(
+        #     "Instrument Family Name",
+        #     "terms",
+        #     field="misc.platform.Instrument Family Name.keyword",
+        # )
+        # agg.bucket(
+        #     "Instrument Mode",
+        #     "terms",
+        #     field="misc.platform.Instrument Mode.keyword",
+        # )
+        # agg.bucket(
+        #     "Mission",
+        #     "terms",
+        #     field="misc.platform.Mission.keyword",
+        # )
+        # agg.bucket(
+        #     "NSSDC Identifier",
+        #     "terms",
+        #     field="misc.platform.NSSDC Identifier.keyword",
+        # )
+        # agg.bucket(
+        #     "Platform Family Name",
+        #     "terms",
+        #     field="misc.platform.Platform Family Name.keyword",
+        # )
+        # agg.bucket(
+        #     "Platform Number",
+        #     "terms",
+        #     field="misc.platform.Platform Number.keyword",
+        # )
 
-        # product_info
-        agg.bucket(
-            "Polarisation",
-            "terms",
-            field="misc.product_info.Polarisation.keyword",
-        )
-        agg.bucket(
-            "Product Class",
-            "terms",
-            field="misc.product_info.Product Class.keyword",
-        )
-        agg.bucket(
-            "Product Class Description",
-            "terms",
-            field="misc.product_info.Product Class Description.keyword",
-        )
-        agg.bucket(
-            "Product Composition",
-            "terms",
-            field="misc.product_info.Product Composition.keyword",
-        )
-        agg.bucket(
-            "Product Type",
-            "terms",
-            field="misc.product_info.Product Type.keyword",
-        )
-        agg.bucket(
-            "Resolution",
-            "terms",
-            field="misc.product_info.Resolution.keyword",
-        )
-        agg.bucket(
-            "Timeliness Category",
-            "terms",
-            field="misc.product_info.Timeliness Category.keyword",
-        )
+        # # product_info
+        # agg.bucket(
+        #     "Polarisation",
+        #     "terms",
+        #     field="misc.product_info.Polarisation.keyword",
+        # )
+        # agg.bucket(
+        #     "Product Class",
+        #     "terms",
+        #     field="misc.product_info.Product Class.keyword",
+        # )
+        # agg.bucket(
+        #     "Product Class Description",
+        #     "terms",
+        #     field="misc.product_info.Product Class Description.keyword",
+        # )
+        # agg.bucket(
+        #     "Product Composition",
+        #     "terms",
+        #     field="misc.product_info.Product Composition.keyword",
+        # )
+        # agg.bucket(
+        #     "Product Type",
+        #     "terms",
+        #     field="misc.product_info.Product Type.keyword",
+        # )
+        # agg.bucket(
+        #     "Resolution",
+        #     "terms",
+        #     field="misc.product_info.Resolution.keyword",
+        # )
+        # agg.bucket(
+        #     "Timeliness Category",
+        #     "terms",
+        #     field="misc.product_info.Timeliness Category.keyword",
+        # )
 
-        # quality_info
-        agg.bucket(
-            "Min Cloud Coverage Assessment",
-            "min",
-            field="misc.quality_info.Cloud Coverage Assessment",
-        )
-        agg.bucket(
-            "Max Cloud Coverage Assessment",
-            "max",
-            field="misc.quality_info.Cloud Coverage Assessment",
-        )
-        agg.bucket(
-            "Average Cloud Coverage Assessment",
-            "avg",
-            field="misc.quality_info.Cloud Coverage Assessment",
-        )
+        # # quality_info
+        # agg.bucket(
+        #     "Min Cloud Coverage Assessment",
+        #     "min",
+        #     field="misc.quality_info.Cloud Coverage Assessment",
+        # )
+        # agg.bucket(
+        #     "Max Cloud Coverage Assessment",
+        #     "max",
+        #     field="misc.quality_info.Cloud Coverage Assessment",
+        # )
+        # agg.bucket(
+        #     "Average Cloud Coverage Assessment",
+        #     "avg",
+        #     field="misc.quality_info.Cloud Coverage Assessment",
+        # )
 
-        # solar_zenith
-        # nadir
-        agg.bucket("nadir_min", "min", field="misc.solar_zenith.nadir.min")
-        agg.bucket("nadir_max", "max", field="misc.solar_zenith.nadir.max")
-        # oblique
-        agg.bucket("oblique_min", "min", field="misc.solar_zenith.oblique.min")
-        agg.bucket("oblique_max", "max", field="misc.solar_zenith.oblique.max")
+        # # solar_zenith
+        # # nadir
+        # agg.bucket("nadir_min", "min", field="misc.solar_zenith.nadir.min")
+        # agg.bucket("nadir_max", "max", field="misc.solar_zenith.nadir.max")
+        # # oblique
+        # agg.bucket("oblique_min", "min", field="misc.solar_zenith.oblique.min")
+        # agg.bucket("oblique_max", "max", field="misc.solar_zenith.oblique.max")
 
-        # solar_zenith_angle
-        agg.bucket("solar_zenith_angle_min", "min", field="misc.solar_zenith_angle.min")
-        agg.bucket("solar_zenith_angle_max", "max", field="misc.solar_zenith_angle.max")
+        # # solar_zenith_angle
+        # agg.bucket("solar_zenith_angle_min", "min", field="misc.solar_zenith_angle.min")
+        # agg.bucket("solar_zenith_angle_max", "max", field="misc.solar_zenith_angle.max")
 
         # spatial
         # VERY SLOW
@@ -695,6 +712,9 @@ class ElasticsearchEOCollection(STACDocument):
         agg.bucket("temporal_max", "max", field="temporal.end_time")
 
         search = super().search(**kwargs)
+
+        if id:
+            search = search.query("term", misc__platform__Satellite__raw=id)
 
         search.aggs.bucket("satallites", agg)
 
@@ -715,17 +735,24 @@ class ElasticsearchEOCollection(STACDocument):
             collection = {
                 "id": aggregation.key,
                 "item_count": aggregation.doc_count,
+                # "extent": DEFAULT_EXTENT,
                 "extent": {
-                    "temporal": {
-                        "interval": [
-                            [
-                                aggregation.temporal_min.value_as_string,
-                                aggregation.temporal_min.value_as_string,
-                            ]
-                        ]
-                    },
-                    "bbox": DEFAULT_EXTENT["spatial"],
+                    "temporal": {"interval": [[None, None]]},
+                    "spatial": {"bbox": [[-180, -90, 180, 90]]},
                 },
+                # "extent": {
+                #     "temporal": {
+                #         "interval": [
+                #             [
+                #                 aggregation.temporal_min.value_as_string,
+                #                 aggregation.temporal_min.value_as_string,
+                #             ]
+                #         ]
+                #     },
+                #     "spatial": {
+                #         "bbox": DEFAULT_EXTENT["spatial"],
+                #     },
+                # },
                 "properties": {},
             }
 
@@ -734,7 +761,11 @@ class ElasticsearchEOCollection(STACDocument):
 
                 if isinstance(term, dict):
 
-                    if "value" in term and "value_as_string" not in term:
+                    if (
+                        "value" in term
+                        and term["value"]
+                        and "value_as_string" not in term
+                    ):
                         collection[key] = term["value"]
 
                     elif "buckets" in term and term["buckets"]:
@@ -746,8 +777,8 @@ class ElasticsearchEOCollection(STACDocument):
                 meta={"id": collection.get("id")},
                 id=collection.get("id"),
                 title=collection.get("id"),
-                description=collection.get("description"),
-                license=collection.get("license"),
+                description=collection.get("description", ""),
+                license=collection.get("license", ""),
                 properties=collection.get("properties", {}),
                 extent=collection.get("extent", {}),
             )

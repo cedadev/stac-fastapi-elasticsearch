@@ -2,14 +2,14 @@
 """
 
 """
-__author__ = 'Richard Smith'
-__date__ = '18 Jun 2021'
-__copyright__ = 'Copyright 2018 United Kingdom Research and Innovation'
-__license__ = 'BSD - see LICENSE file in top-level package directory'
-__contact__ = 'richard.d.smith@stfc.ac.uk'
+__author__ = "Richard Smith"
+__date__ = "18 Jun 2021"
+__copyright__ = "Copyright 2018 United Kingdom Research and Innovation"
+__license__ = "BSD - see LICENSE file in top-level package directory"
+__contact__ = "richard.d.smith@stfc.ac.uk"
 
-from typing import List, Union
 import functools
+from typing import List, Union
 
 NumType = Union[float, int]
 
@@ -26,7 +26,7 @@ class Coordinates:
         self.maxlat = maxlat
 
     @classmethod
-    def from_geojson(cls, coordinates: List[List[NumType]]) -> 'Coordinates':
+    def from_geojson(cls, coordinates: List[List[NumType]]) -> "Coordinates":
         """
         GeoJSON formatted coordinates are in the form:
 
@@ -43,7 +43,7 @@ class Coordinates:
         return cls(minlon, maxlon, minlat, maxlat)
 
     @classmethod
-    def from_wgs84(cls, coordinates: List) -> 'Coordinates':
+    def from_wgs84(cls, coordinates: List) -> "Coordinates":
         """
         WGS84 formatted coordinates are in the form:
 
@@ -65,7 +65,7 @@ class Coordinates:
 
         [minLon, minLat, maxLon, maxLat]
         """
-        
+
         return [self.minlon, self.minlat, self.maxlon, self.maxlat]
 
     def to_geojson(self) -> List[List[NumType]]:
@@ -75,7 +75,7 @@ class Coordinates:
         [[minLon, maxLat],[maxLon, minLat]]
         """
 
-        return [[self.minlon, self.maxlat],[self.maxlon, self.minlat]]
+        return [[self.minlon, self.maxlat], [self.maxlon, self.minlat]]
 
 
 def rgetattr(obj, attr, *args):
@@ -89,6 +89,8 @@ def rgetattr(obj, attr, *args):
 
     :return:
     """
+
     def _getattr(obj, attr):
         return getattr(obj, attr, *args)
-    return functools.reduce(_getattr, [obj] + attr.split('.'))
+
+    return functools.reduce(_getattr, [obj] + attr.split("."))

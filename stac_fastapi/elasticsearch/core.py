@@ -40,8 +40,6 @@ from stac_fastapi.elasticsearch.pagination import generate_pagination_links
 # Package imports
 from stac_fastapi.elasticsearch.session import Session
 
-from .utils import get_queryset
-
 logger = logging.getLogger(__name__)
 
 NumType = Union[float, int]
@@ -97,28 +95,25 @@ class CoreCrudClient(BaseCoreClient):
         request_dict["item_ids"] = request_dict.pop("ids")
         request_dict["collection_ids"] = request_dict.pop("collections")
 
-        items = get_queryset(
-            self, self.item_table, catalog=request.get("root_path"), **request_dict
+        items, count = self.item_table.search(
+            catalog=request.get("root_path"), **request_dict
         )
-        result_count = items.count()
 
         response = []
 
-        for item in items.execute():
+        for item in items:
             response.append(self.item_serializer.db_to_stac(item, request))
 
         item_collection = stac_types.ItemCollection(
             type="FeatureCollection",
             features=response,
-            links=generate_pagination_links(
-                request, result_count, search_request.limit
-            ),
+            links=generate_pagination_links(request, count, search_request.limit),
         )
 
         # Modify response with extensions
         if self.extension_is_enabled("ContextExtension"):
             context = generate_context(
-                search_request.limit, result_count, getattr(search_request, "page", 1)
+                search_request.limit, count, getattr(search_request, "page", 1)
             )
             item_collection["context"] = context
 
@@ -171,17 +166,16 @@ class CoreCrudClient(BaseCoreClient):
         if "filter-lang" not in search.keys():
             search["filter-lang"] = "cql-text"
 
-        items = get_queryset(
-            self, self.item_table, catalog=request.get("root_path").strip("/"), **search
+        items, count = self.item_table.search(
+            catalog=request.get("root_path").strip("/"), **search
         )
-        result_count = items.count()
 
         response = []
 
-        for item in items.execute():
+        for item in items:
             response.append(self.item_serializer.db_to_stac(item, request))
 
-        links = generate_pagination_links(request, result_count, limit)
+        links = generate_pagination_links(request, count, limit)
 
         # Create base response
         item_collection = stac_types.ItemCollection(
@@ -193,7 +187,7 @@ class CoreCrudClient(BaseCoreClient):
         # Modify response with extensions
         if self.extension_is_enabled("ContextExtension"):
             item_collection["context"] = generate_context(
-                limit, result_count, kwargs.get("page", 1)
+                limit, count, kwargs.get("page", 1)
             )
 
         if self.extension_is_enabled("ContextCollectionExtension"):
@@ -257,9 +251,11 @@ class CoreCrudClient(BaseCoreClient):
 
         response = []
 
-        for collection in self.collection_table.search(
+        collections, count = self.collection_table.search(
             catalog=request.get("root_path").strip("/")
-        ):
+        )
+
+        for collection in collections:
             response.append(
                 serializers.CollectionSerializer.db_to_stac(collection, request)
             )
@@ -335,12 +331,12 @@ class CoreCrudClient(BaseCoreClient):
         page = int(query_params.get("page", "1"))
         limit = int(query_params.get("limit", "10"))
 
-        items = self.item_table.search(
-            catalog=request.get("root_path").strip("/")
-        ).filter("term", misc__platform__Satellite__raw=collection_id)
-        result_count = items.count()
-
-        items = items[(page - 1) * limit : page * limit]
+        items, count = self.item_table.search(
+            catalog=request.get("root_path").strip("/"),
+            collection=collection_id,
+            page=page,
+            limit=limit,
+        )
 
         # TODO: support filter parameter https://portal.ogc.org/files/96288#filter-param
 
@@ -353,12 +349,12 @@ class CoreCrudClient(BaseCoreClient):
         item_collection = stac_types.ItemCollection(
             type="FeatureCollection",
             features=response,
-            links=generate_pagination_links(request, result_count, limit),
+            links=generate_pagination_links(request, count, limit),
         )
 
         # Modify response with extensions
         if self.extension_is_enabled("ContextExtension"):
-            context = generate_context(limit, result_count, page)
+            context = generate_context(limit, count, page)
             item_collection["context"] = context
 
         return item_collection

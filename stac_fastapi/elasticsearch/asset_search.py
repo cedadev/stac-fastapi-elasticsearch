@@ -20,20 +20,16 @@ from typing import List, Optional, Type, Union
 import attr
 from elasticsearch import NotFoundError
 from fastapi import HTTPException
-from stac_fastapi.elasticsearch.context import generate_context
-from stac_fastapi.elasticsearch.models import database, serializers
-
-# Package imports
-from stac_fastapi.elasticsearch.pagination import generate_pagination_links
 from stac_fastapi_asset_search import types as asset_types
 
 # Stac FastAPI asset search imports
 from stac_fastapi_asset_search.client import BaseAssetSearchClient
 
-from .utils import get_queryset
+from stac_fastapi.elasticsearch.context import generate_context
+from stac_fastapi.elasticsearch.models import database, serializers, utils
 
-# Stac FastAPI imports
-
+# Package imports
+from stac_fastapi.elasticsearch.pagination import generate_pagination_links
 
 logger = logging.getLogger(__name__)
 
@@ -67,7 +63,7 @@ class AssetSearchClient(BaseAssetSearchClient):
         if "ids" in request_dict.keys():
             request_dict["asset_ids"] = request_dict.pop("ids")
 
-        assets = get_queryset(self, self.asset_table, **request_dict)
+        assets = utils.get_queryset(self, self.asset_table, **request_dict)
         result_count = assets.count()
 
         response = []
@@ -123,7 +119,7 @@ class AssetSearchClient(BaseAssetSearchClient):
         if "filter-lang" not in search.keys():
             search["filter-lang"] = "cql-text"
 
-        assets = get_queryset(self, self.asset_table, **search)
+        assets = utils.get_queryset(self, self.asset_table, **search)
         result_count = assets.count()
 
         response = []

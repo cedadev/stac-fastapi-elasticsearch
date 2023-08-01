@@ -1294,6 +1294,8 @@ class ElasticsearchEOCollection(STACDocument):
 
         response = search.execute()
 
+        collections = []
+
         for aggregation in response.aggregations.satallites.buckets:
 
             # try:
@@ -1343,15 +1345,19 @@ class ElasticsearchEOCollection(STACDocument):
                             bucket["key"] for bucket in term["buckets"]
                         ]
 
-            yield ElasticsearchEOCollection(
-                meta={"id": collection.get("id")},
-                id=collection.get("id"),
-                title=collection.get("id"),
-                description=collection.get("description", ""),
-                license=collection.get("license", ""),
-                properties=collection.get("properties", {}),
-                extent=collection.get("extent", {}),
+            collections.append(
+                ElasticsearchEOCollection(
+                    meta={"id": collection.get("id")},
+                    id=collection.get("id"),
+                    title=collection.get("id"),
+                    description=collection.get("description", ""),
+                    license=collection.get("license", ""),
+                    properties=collection.get("properties", {}),
+                    extent=collection.get("extent", {}),
+                )
             )
+
+        return collections, len(collections)
 
     @classmethod
     def _matches(cls, hit):

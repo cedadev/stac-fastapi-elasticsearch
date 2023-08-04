@@ -739,7 +739,7 @@ class ElasticsearchEOItem(STACDocument):
         if item_ids := kwargs.get("item_ids"):
             filter_queries.append(Q("terms", _id=item_ids))
 
-        if collection_ids := kwargs.get("collection_ids"):
+        if collection_ids := kwargs.get("collection"):
             filter_queries.append(
                 Q("terms", misc__platform__Satellite__raw=collection_ids)
             )
@@ -1110,13 +1110,14 @@ class ElasticsearchEOCollection(STACDocument):
 
     def get(self, id, **kwargs):
         try:
-            return next(self.search(id=id))
+            search, _ = self.search(id=id)
+            return search[0]
         except StopIteration:
             raise NotFoundError
 
     @classmethod
     def search(cls, id: str = None, **kwargs):
-        agg = A("terms", field="misc.platform.Satellite.raw")
+        agg = A("terms", field="misc.platform.Satellite.raw", size=15)
 
         # orbit_info
         agg.bucket(

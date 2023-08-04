@@ -333,7 +333,7 @@ class CoreCrudClient(BaseCoreClient):
 
         items, count = self.item_table.search(
             catalog=request.get("root_path").strip("/"),
-            collection=collection_id,
+            collection=[collection_id],
             page=page,
             limit=limit,
         )

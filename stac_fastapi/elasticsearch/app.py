@@ -39,7 +39,7 @@ extensions = [
     # SortExtension(),
     FilterExtension(client=FiltersClient()),
     FreeTextExtension(),
-    ContextCollectionExtension(),
+    # ContextCollectionExtension(),
     PaginationExtension(),
 ]
 

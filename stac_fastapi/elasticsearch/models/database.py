@@ -40,7 +40,6 @@ CATALOGS = settings.CATALOGS
 
 
 def indexes_from_catalogs(index_key: str) -> list:
-
     if index_key in CATALOGS:
         return [CATALOGS[index_key]]
 
@@ -61,13 +60,11 @@ assets = Index(ASSET_INDEXES[0])
 
 
 class Extent(InnerDoc):
-
     temporal = DateRange()
     spatial = GeoShape()
 
 
 class STACDocument(Document):
-
     extensions: list
     catalogs: dict = CATALOGS
 
@@ -102,7 +99,6 @@ class STACDocument(Document):
         Return Elasticsearch DSL Search
         """
         if len(cls.indexes) > 1:
-
             if catalog and catalog in cls.catalogs:
                 return super().search(index=cls.catalogs[catalog][cls.index_key])
 
@@ -309,7 +305,6 @@ class STACDocument(Document):
             filter_queries.append(Q("terms", categories=role))
 
         if self.extension_is_enabled("FilterExtension"):
-
             field_mapping = {
                 "datetime": "properties.datetime",
                 "bbox": "spatial.bbox.coordinates",
@@ -368,9 +363,7 @@ class STACDocument(Document):
 
         if self.extension_is_enabled("FieldsExtension"):
             if fields := kwargs.get("fields"):
-
                 if isinstance(fields, dict):
-
                     if exclude_fields := fields.get("include"):
                         qs = qs.source(include=list(exclude_fields))
 
@@ -399,7 +392,6 @@ class STACDocument(Document):
 
 @assets.document
 class ElasticsearchAsset(STACDocument):
-
     type = "Feature"
     index_key: str = "ASSET_INDEX"
     indexes: list = ASSET_INDEXES
@@ -748,7 +740,9 @@ class ElasticsearchEOItem(STACDocument):
             filter_queries.append(Q("terms", _id=item_ids))
 
         if collection_ids := kwargs.get("collection_ids"):
-            filter_queries.append(Q("terms", misc__platform__Satellite=collection_ids))
+            filter_queries.append(
+                Q("terms", misc__platform__Satellite__raw=collection_ids)
+            )
 
         if intersects := kwargs.get("intersects"):
             filter_queries.append(
@@ -914,7 +908,6 @@ class ElasticsearchEOItem(STACDocument):
             qs = qs[(page - 1) * limit : page * limit]
 
         if self.extension_is_enabled("FilterExtension"):
-
             field_mapping = {
                 "datetime": "temporal.start_time",
                 "bbox": "spatial.geometries.full_search",
@@ -973,9 +966,7 @@ class ElasticsearchEOItem(STACDocument):
 
         if self.extension_is_enabled("FieldsExtension"):
             if fields := kwargs.get("fields"):
-
                 if isinstance(fields, dict):
-
                     if exclude_fields := fields.get("include"):
                         qs = qs.source(include=list(exclude_fields))
 
@@ -1125,7 +1116,6 @@ class ElasticsearchEOCollection(STACDocument):
 
     @classmethod
     def search(cls, id: str = None, **kwargs):
-
         agg = A("terms", field="misc.platform.Satellite.raw")
 
         # orbit_info
@@ -1297,7 +1287,6 @@ class ElasticsearchEOCollection(STACDocument):
         collections = []
 
         for aggregation in response.aggregations.satallites.buckets:
-
             # try:
             #     coordinates = Coordinates(
             #         aggregation.geo_extent.value[0],
@@ -1330,9 +1319,7 @@ class ElasticsearchEOCollection(STACDocument):
 
             # think there's a cleaner way to do this
             for key, term in aggregation.to_dict().items():
-
                 if isinstance(term, dict):
-
                     if (
                         "value" in term
                         and term["value"]

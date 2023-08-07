@@ -94,7 +94,7 @@ class STACDocument(Document):
         return getattr(self, "stac_version", STAC_VERSION_DEFAULT)
 
     @classmethod
-    def search(cls, catalog: str = None, **kwargs) -> Search:
+    def _search(cls, catalog: str = None, **kwargs) -> Search:
         """
         Return Elasticsearch DSL Search
         """
@@ -397,7 +397,7 @@ class ElasticsearchAsset(STACDocument):
     indexes: list = ASSET_INDEXES
 
     def search(self, **kwargs):
-        search = super().search(catalog=kwargs.get("catalog", None))
+        search = super()._search(catalog=kwargs.get("catalog", None))
 
         search = self.get_queryset(search, **kwargs)
 
@@ -495,7 +495,7 @@ class ElasticsearchItem(STACDocument):
     indexes: list = ITEM_INDEXES
 
     def search(self, **kwargs):
-        search = super().search(catalog=kwargs.get("catalog", None))
+        search = super()._search(catalog=kwargs.get("catalog", None))
 
         search = self.get_queryset(search, **kwargs)
 
@@ -605,7 +605,7 @@ class ElasticsearchCollection(STACDocument):
     indexes: list = COLLECTION_INDEXES
 
     def search(self, **kwargs):
-        search = super().search(catalog=kwargs.get("catalog", None))
+        search = super()._search(catalog=kwargs.get("catalog", None))
 
         search = self.get_queryset(search, **kwargs)
 
@@ -700,7 +700,8 @@ class ElasticsearchEOItem(STACDocument):
     indexes: list = ITEM_INDEXES
 
     def search(self, **kwargs):
-        search = super().search(catalog=kwargs.get("catalog", None))
+        print("searching with kwargs: ", kwargs)
+        search = super()._search(catalog=kwargs.get("catalog", None))
 
         search = self.get_queryset(search, **kwargs)
 
@@ -712,14 +713,13 @@ class ElasticsearchEOItem(STACDocument):
         # hit is the raw dict as returned by elasticsearch
         return True
 
-    def get(self, id, **kwargs):
+    def get(self, **kwargs):
         try:
-            search = self.search("term", _id=id)
-            response = search.execute()
-            print(response)
-            return response.hits[0]
-        except StopIteration:
-            raise NotFoundError
+            item, _ = self.search(**kwargs)
+            return item[0]
+
+        except IndexError as exc:
+            raise NotFoundError from exc
 
     def get_queryset(self, qs: Search, **kwargs) -> Search:
         """
@@ -1276,7 +1276,7 @@ class ElasticsearchEOCollection(STACDocument):
         agg.bucket("temporal_min", "min", field="temporal.start_time")
         agg.bucket("temporal_max", "max", field="temporal.end_time")
 
-        search = super().search(**kwargs)
+        search = super()._search(**kwargs)
 
         if id:
             search = search.query("term", misc__platform__Satellite__raw=id)

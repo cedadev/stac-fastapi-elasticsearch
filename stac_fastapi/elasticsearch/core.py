@@ -221,7 +221,13 @@ class CoreCrudClient(BaseCoreClient):
             Item.
         """
         try:
-            item = self.item_table.get(id=item_id)
+            search = {
+                "collection_ids": [collection_id],
+                "catalog": [request.get("root_path").strip("/")],
+                "item_ids": [item_id],
+            }
+
+            item = self.item_table.get(**search)
         except NotFoundError as exc:
             raise (
                 HTTPException(
@@ -251,7 +257,7 @@ class CoreCrudClient(BaseCoreClient):
 
         response = []
 
-        collections, count = self.collection_table.search(
+        collections, _ = self.collection_table.search(
             catalog=request.get("root_path").strip("/")
         )
 

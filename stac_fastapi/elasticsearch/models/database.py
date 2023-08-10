@@ -383,7 +383,7 @@ class STACDocument(Document):
                     if isinstance(s, str):
                         s = s.lstrip("+")
                     elif isinstance(s, dict):
-                        s = {{s["field"]}: {"order": s["direction"]}}
+                        s = {s["field"]: {"order": s["direction"]}}
                     sort_params.append(s)
             qs = qs.sort(*sort_params)
 
@@ -986,7 +986,7 @@ class ElasticsearchEOItem(STACDocument):
                     if isinstance(s, str):
                         s = s.lstrip("+")
                     elif isinstance(s, dict):
-                        s = {{s["field"]}: {"order": s["direction"]}}
+                        s = {s["field"]: {"order": s["direction"]}}
                     sort_params.append(s)
             qs = qs.sort(*sort_params)
 
@@ -999,21 +999,31 @@ class ElasticsearchEOItem(STACDocument):
         file = getattr(self, "file", {})
         directory = getattr(file, "directory", "")
         data_file = getattr(file, "data_file", "")
+        data_files = getattr(file, "data_files", "")
         metadata_file = getattr(file, "metadata_file", "")
         quicklook_file = getattr(file, "quicklook_file", "")
 
-        assets = {}
+        stac_assets = {}
 
-        if data_file:
-            assets["data_file"] = {
+        if data_file and not data_files:
+            stac_assets["data_file"] = {
                 "href": f"{settings.posix_download_url}{directory}/{data_file}",
                 "title": data_file,
                 "type": "application/zip",
                 "roles": ["data"],
             }
 
+        if data_files:
+            for count, value in enumerate(data_files.split(",")):
+                stac_assets[f"data_file_{count}"] = {
+                    "href": f"{settings.posix_download_url}{directory}/{value}",
+                    "title": value,
+                    "type": "application/zip",
+                    "roles": ["data"],
+                }
+
         if metadata_file:
-            assets["metadata_file"] = {
+            stac_assets["metadata_file"] = {
                 "href": f"{settings.posix_download_url}{directory}/{metadata_file}",
                 "title": metadata_file,
                 "type": "application/xml",
@@ -1021,7 +1031,7 @@ class ElasticsearchEOItem(STACDocument):
             }
 
         if quicklook_file:
-            assets["quicklook_file"] = {
+            stac_assets["quicklook_file"] = {
                 "href": f"{settings.posix_download_url}{directory}/{quicklook_file}",
                 "title": quicklook_file,
                 "type": "image/png",

@@ -95,9 +95,9 @@ class CoreCrudClient(BaseCoreClient):
         request_dict["item_ids"] = request_dict.pop("ids")
         request_dict["collection_ids"] = request_dict.pop("collections")
 
-        items, count = self.item_table.search(
-            catalog=request.get("root_path"), **request_dict
-        )
+        items = self.item_table.search(catalog=request.get("root_path"), **request_dict)
+
+        count = self.item_table.count(catalog=request.get("root_path"), **request_dict)
 
         response = []
 
@@ -166,7 +166,11 @@ class CoreCrudClient(BaseCoreClient):
         if "filter-lang" not in search.keys():
             search["filter-lang"] = "cql-text"
 
-        items, count = self.item_table.search(
+        items = self.item_table.search(
+            catalog=request.get("root_path").strip("/"), **search
+        )
+
+        count = self.item_table.count(
             catalog=request.get("root_path").strip("/"), **search
         )
 
@@ -257,7 +261,7 @@ class CoreCrudClient(BaseCoreClient):
 
         response = []
 
-        collections, _ = self.collection_table.search(
+        collections = self.collection_table.search(
             catalog=request.get("root_path").strip("/")
         )
 
@@ -337,7 +341,14 @@ class CoreCrudClient(BaseCoreClient):
         page = int(query_params.get("page", "1"))
         limit = int(query_params.get("limit", "10"))
 
-        items, count = self.item_table.search(
+        items = self.item_table.search(
+            catalog=request.get("root_path").strip("/"),
+            collection=[collection_id],
+            page=page,
+            limit=limit,
+        )
+
+        count = self.item_table.count(
             catalog=request.get("root_path").strip("/"),
             collection=[collection_id],
             page=page,

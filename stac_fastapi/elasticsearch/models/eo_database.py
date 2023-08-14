@@ -41,12 +41,10 @@ STAC_VERSION_DEFAULT = "1.0.0"
 class ElasticsearchEOItem(database.STACDocument):
     type = "Feature"
 
-    def search(self, **kwargs):
+    def _search(self, **kwargs):
         search = super()._search(catalog=kwargs.get("catalog", None))
 
-        search = self.get_queryset(search, **kwargs)
-
-        return search.execute(), search.count()
+        return self.get_queryset(search, **kwargs)
 
     @classmethod
     def _matches(cls, hit):
@@ -422,6 +420,7 @@ class ElasticsearchEOItem(database.STACDocument):
         """
         Return the collection id
         """
+
         return rgetattr(self, "misc.platform.Satellite")
 
     def get_links(self, base_url: str) -> list:
@@ -464,7 +463,7 @@ class ElasticsearchEOCollection(database.STACDocument):
             raise NotFoundError
 
     @classmethod
-    def search(cls, id: str = None, **kwargs):
+    def _search(cls, id: str = None, **kwargs):
         agg = A("terms", field="misc.platform.Satellite.raw", size=15)
 
         # orbit_info
@@ -633,8 +632,6 @@ class ElasticsearchEOCollection(database.STACDocument):
 
         response = search.execute()
 
-        collections = []
-
         for aggregation in response.aggregations.satallites.buckets:
             # try:
             #     coordinates = Coordinates(
@@ -681,19 +678,26 @@ class ElasticsearchEOCollection(database.STACDocument):
                             bucket["key"] for bucket in term["buckets"]
                         ]
 
-            collections.append(
-                ElasticsearchEOCollection(
-                    meta={"id": collection.get("id")},
-                    id=collection.get("id"),
-                    title=collection.get("id"),
-                    description=collection.get("description", ""),
-                    license=collection.get("license", ""),
-                    properties=collection.get("properties", {}),
-                    extent=collection.get("extent", {}),
-                )
+            yield ElasticsearchEOCollection(
+                meta={"id": collection.get("id")},
+                id=collection.get("id"),
+                title=collection.get("id"),
+                description=collection.get("description", ""),
+                license=collection.get("license", ""),
+                properties=collection.get("properties", {}),
+                extent=collection.get("extent", {}),
             )
 
-        return collections, len(collections)
+    def count(self, **kwargs):
+        agg = A("value_count", field="misc.platform.Satellite.raw")
+
+        search = super()._search(**kwargs)
+
+        search.aggs.bucket("collection_count", agg)
+
+        response = search.execute()
+
+        return response.aggregations.collection_count.value
 
     @classmethod
     def _matches(cls, hit):

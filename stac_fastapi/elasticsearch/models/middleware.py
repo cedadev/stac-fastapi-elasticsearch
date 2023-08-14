@@ -66,11 +66,34 @@ class SearchMiddleware:
         # check CATALOGS mapping
         if "catalog" in kwargs and kwargs["catalog"] in self.catalogs_map:
             database = self.database_models[self.catalogs_map[kwargs["catalog"]]]
+            return database.search(**kwargs)
 
         else:
-            database = next(iter(self.database_models.values()))
+            page = int(kwargs["page"]) if "page" and kwargs["page"] in kwargs else 1
+            limit = (
+                int(kwargs["limit"]) if "limit" and kwargs["limit"] in kwargs else 10
+            )
+            for database in self.database_models.values():
+                count_kwargs = {"database": database} | kwargs
+                count = self.count(**count_kwargs)
+                if page * limit < count:
+                    return database.search(**kwargs)
 
-        return database.search(**kwargs)
+    def count(self, **kwargs):
+        if "database" in kwargs:
+            return kwargs["database"].count(**kwargs)
+
+        if "catalog" in kwargs and kwargs["catalog"] in self.catalogs_map:
+            database = self.database_models[self.catalogs_map[kwargs["catalog"]]]
+            return database.count(**kwargs)
+
+        else:
+            total_count = 0
+            for database in self.database_models.values():
+                count = database.count(**kwargs)
+                total_count += count
+
+            return total_count
 
     def get(self, **kwargs):
         # check CATALOGS mapping

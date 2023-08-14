@@ -17,10 +17,12 @@ from elasticsearch import NotFoundError
 from elasticsearch_dsl import Document, Search
 from elasticsearch_dsl.query import QueryString
 from elasticsearch_dsl.search import Q, Search
+
 # Third-party imports
 from fastapi import HTTPException
 from pygeofilter.parsers.cql2_json import parse as parse_json2
 from pygeofilter.parsers.cql2_text import parse as parse_text
+
 # CQL Filters imports
 from pygeofilter.parsers.cql_json import parse as parse_json
 from pygeofilter_elasticsearch import to_filter
@@ -53,17 +55,23 @@ class STACDocument(Document):
         super().__init__(**kwargs)
         if catalog and index:
             self.add(catalog, index)
-            # self.Index(name=index)
+            self.Index(name=index)
         self.extensions = extensions
 
     class Index:
-        name = "ceda-items-atod"
+        name = ""
 
-        # def __init__(self, name: str):
-        #     self.name = name
+        def __init__(self, name: str):
+            self.name = name
 
     def add(self, catalog, index) -> None:
         self.catalogs[catalog] = index
+
+    def search(self, **kwargs):
+        return self._search(**kwargs).execute()
+
+    def count(self, **kwargs):
+        return self._search(**kwargs).count()
 
     def extension_is_enabled(self, extension: str) -> bool:
         """Check if an api extension is enabled."""
@@ -386,9 +394,7 @@ class ElasticsearchAsset(STACDocument):
     def search(self, **kwargs):
         search = super()._search(catalog=kwargs.get("catalog", None))
 
-        search = self.get_queryset(search, **kwargs)
-
-        return search.execute(), search.count()
+        return self.get_queryset(search, **kwargs)
 
     @classmethod
     def _matches(cls, hit):
@@ -486,9 +492,7 @@ class ElasticsearchItem(STACDocument):
     def search(self, **kwargs):
         search = super()._search(catalog=kwargs.get("catalog", None))
 
-        search = self.get_queryset(search, **kwargs)
-
-        return search.execute(), search.count()
+        return self.get_queryset(search, **kwargs)
 
     @classmethod
     def _matches(cls, hit):
@@ -593,9 +597,7 @@ class ElasticsearchCollection(STACDocument):
     def search(self, **kwargs):
         search = super()._search(catalog=kwargs.get("catalog", None))
 
-        search = self.get_queryset(search, **kwargs)
-
-        return search.execute(), search.count()
+        return self.get_queryset(search, **kwargs)
 
     @classmethod
     def _matches(cls, hit):

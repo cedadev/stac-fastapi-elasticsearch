@@ -30,7 +30,7 @@ from stac_fastapi.elasticsearch.asset_search import AssetSearchClient
 from stac_fastapi.elasticsearch.config import settings
 from stac_fastapi.elasticsearch.core import CoreCrudClient
 from stac_fastapi.elasticsearch.filters import FiltersClient
-from stac_fastapi.elasticsearch.models import database
+from stac_fastapi.elasticsearch.models import middleware
 from stac_fastapi.elasticsearch.session import Session
 
 extensions = [
@@ -48,9 +48,8 @@ extensions.append(
     AssetSearchExtension(
         client=AssetSearchClient(
             extensions=extensions,
-            asset_table=database.ElasticsearchAsset(
-                extensions=extensions,
-                asset_table=database.ElasticsearchAsset(extensions=extensions),
+            asset_table=middleware.AssetSearchMiddleware(
+                catalogs=settings.CATALOGS, extensions=extensions
             ),
         ),
         asset_search_get_request_model=create_asset_search_get_request_model(
@@ -70,8 +69,12 @@ api = StacApi(
     client=CoreCrudClient(
         session=session,
         extensions=extensions,
-        item_table=database.ElasticsearchEOItem(extensions=extensions),
-        collection_table=database.ElasticsearchEOCollection(extensions=extensions),
+        item_table=middleware.ItemSearchMiddleware(
+            catalogs=settings.CATALOGS, extensions=extensions
+        ),
+        collection_table=middleware.CollectionSearchMiddleware(
+            catalogs=settings.CATALOGS, extensions=extensions
+        ),
     ),
     pagination_extension=PaginationExtension,
     description=settings.STAC_DESCRIPTION,

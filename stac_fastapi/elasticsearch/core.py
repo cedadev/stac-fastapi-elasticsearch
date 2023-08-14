@@ -34,7 +34,7 @@ from stac_pydantic.shared import MimeTypes
 from starlette.requests import Request as StarletteRequest
 
 from stac_fastapi.elasticsearch.context import generate_context
-from stac_fastapi.elasticsearch.models import database, serializers
+from stac_fastapi.elasticsearch.models import database, middleware, serializers
 from stac_fastapi.elasticsearch.pagination import generate_pagination_links
 
 # Package imports
@@ -52,11 +52,11 @@ class CoreCrudClient(BaseCoreClient):
     """
 
     session: Session = attr.ib(default=None)
-    item_table: Type[database.ElasticsearchItem] = attr.ib(
-        default=database.ElasticsearchItem
+    item_table: Type[middleware.SearchMiddleware] = attr.ib(
+        default=middleware.ItemSearchMiddleware
     )
-    collection_table: Type[database.ElasticsearchCollection] = attr.ib(
-        default=database.ElasticsearchCollection
+    collection_table: Type[middleware.SearchMiddleware] = attr.ib(
+        default=middleware.CollectionSearchMiddleware
     )
     item_serializer: Type[serializers.ItemSerializer] = attr.ib(
         default=serializers.ItemSerializer

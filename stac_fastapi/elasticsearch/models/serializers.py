@@ -49,7 +49,6 @@ class AssetSerializer(Serializer):
         db_model: database.ElasticsearchAsset,
         request: Response,
     ) -> Asset:
-
         return Asset(
             type="Feature",
             stac_version=db_model.get_stac_version(),
@@ -70,7 +69,6 @@ class AssetSerializer(Serializer):
     def stac_to_db(
         cls, stac_data: Asset, exclude_geometry=False
     ) -> database.ElasticsearchAsset:
-
         db_item = database.ElasticsearchAsset(
             meta={"id": stac_data.get("id")},
             id=stac_data.get("id"),
@@ -95,9 +93,8 @@ class AssetSerializer(Serializer):
 class ItemSerializer(Serializer):
     @classmethod
     def db_to_stac(
-        cls, db_model: database.ElasticsearchEOItem, request: Response
+        cls, db_model: database.ElasticsearchItem, request: Response
     ) -> stac_types.Item:
-
         return stac_types.Item(
             type="Feature",
             stac_version=db_model.get_stac_version(),
@@ -133,7 +130,6 @@ class CollectionSerializer(Serializer):
     def db_to_stac(
         cls, db_model: database.ElasticsearchCollection, request: Response
     ) -> stac_types.Collection:
-
         return stac_types.Collection(
             type="Collection",
             id=db_model.get_id(),

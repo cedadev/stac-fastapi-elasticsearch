@@ -67,9 +67,9 @@ class SearchMiddleware:
             return database.search(**kwargs)
 
         else:
-            page = int(kwargs["page"]) if "page" and kwargs["page"] in kwargs else 1
+            page = int(kwargs["page"]) if "page" in kwargs and kwargs["page"] else 1
             limit = (
-                int(kwargs["limit"]) if "limit" and kwargs["limit"] in kwargs else 10
+                int(kwargs["limit"]) if "limit" in kwargs and kwargs["limit"] else 10
             )
             count = 0
             for database in self.database_models.values():

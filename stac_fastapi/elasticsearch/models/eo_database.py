@@ -688,6 +688,9 @@ class ElasticsearchEOCollection(database.STACDocument):
                 extent=collection.get("extent", {}),
             )
 
+    def search(self, **kwargs):
+        return self._search(**kwargs)
+
     def count(self, **kwargs):
         agg = A("value_count", field="misc.platform.Satellite.raw")
 

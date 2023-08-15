@@ -71,9 +71,10 @@ class SearchMiddleware:
             limit = (
                 int(kwargs["limit"]) if "limit" and kwargs["limit"] in kwargs else 10
             )
+            count = 0
             for database in self.database_models.values():
                 count_kwargs = {"database": database} | kwargs
-                count = self.count(**count_kwargs)
+                count += self.count(**count_kwargs)
                 if page * limit < count:
                     return database.search(**kwargs)
 

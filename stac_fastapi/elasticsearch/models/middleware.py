@@ -73,7 +73,8 @@ class SearchMiddleware:
             )
             count = 0
             for database in self.database_models.values():
-                count_kwargs = {"database": database} | kwargs
+                count_kwargs = kwargs
+                count_kwargs.update({"database": database})
                 count += self.count(**count_kwargs)
                 if page * limit < count:
                     return database.search(**kwargs)

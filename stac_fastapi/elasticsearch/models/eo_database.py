@@ -26,11 +26,10 @@ from pygeofilter.parsers.cql2_text import parse as parse_text
 # CQL Filters imports
 from pygeofilter.parsers.cql_json import parse as parse_json
 from pygeofilter_elasticsearch import to_filter
-from stac_fastapi.types.links import CollectionLinks, ItemLinks
-from stac_pydantic.shared import MimeTypes
-
 from stac_fastapi.elasticsearch.config import settings
 from stac_fastapi.elasticsearch.models import database
+from stac_fastapi.types.links import CollectionLinks, ItemLinks
+from stac_pydantic.shared import MimeTypes
 
 from .utils import Coordinates, rgetattr
 
@@ -707,6 +706,13 @@ class ElasticsearchEOCollection(database.STACDocument):
         # override _matches to match indices in a pattern instead of just ALIAS
         # hit is the raw dict as returned by elasticsearch
         return True
+
+    def get_id(self) -> str:
+        """
+        Return the collection id
+        """
+
+        return rgetattr(self, "misc.platform.Satellite")
 
     def get_summaries(self) -> Optional[dict]:
         """

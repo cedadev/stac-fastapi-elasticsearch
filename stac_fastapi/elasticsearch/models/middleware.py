@@ -98,6 +98,7 @@ class SearchMiddleware:
     def get(self, **kwargs):
         # check CATALOGS mapping
         # call search for each
+
         if "catalog" in kwargs and kwargs["catalog"] in self.catalogs_map:
             database = self.database_models[self.catalogs_map[kwargs["catalog"]]]
             return database.get(**kwargs)
@@ -105,9 +106,9 @@ class SearchMiddleware:
         else:
             for database in self.database_models.values():
                 try:
-                    item = database.get(**kwargs)
-                    if item:
-                        return item
+                    result = database.get(**kwargs)
+                    if result:
+                        return result
                 except:
                     pass
 

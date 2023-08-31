@@ -456,8 +456,8 @@ class ElasticsearchEOCollection(database.STACDocument):
 
     def get(self, id, **kwargs):
         try:
-            search, _ = self.search(id=id)
-            return search[0]
+            search = self.search(id=id)
+            return next(search)
         except StopIteration:
             raise NotFoundError
 
@@ -706,13 +706,6 @@ class ElasticsearchEOCollection(database.STACDocument):
         # override _matches to match indices in a pattern instead of just ALIAS
         # hit is the raw dict as returned by elasticsearch
         return True
-
-    def get_id(self) -> str:
-        """
-        Return the collection id
-        """
-
-        return rgetattr(self, "misc.platform.Satellite")
 
     def get_summaries(self) -> Optional[dict]:
         """

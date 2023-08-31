@@ -22,6 +22,12 @@ from urllib.parse import urljoin
 import attr
 from elasticsearch import NotFoundError
 from fastapi import HTTPException
+from stac_fastapi.elasticsearch.context import generate_context
+from stac_fastapi.elasticsearch.models import database, middleware, serializers
+from stac_fastapi.elasticsearch.pagination import generate_pagination_links
+
+# Package imports
+from stac_fastapi.elasticsearch.session import Session
 from stac_fastapi.types import stac as stac_types
 
 # Stac FastAPI imports
@@ -32,13 +38,6 @@ from stac_pydantic.links import Relations
 # Stac pydantic imports
 from stac_pydantic.shared import MimeTypes
 from starlette.requests import Request as StarletteRequest
-
-from stac_fastapi.elasticsearch.context import generate_context
-from stac_fastapi.elasticsearch.models import database, middleware, serializers
-from stac_fastapi.elasticsearch.pagination import generate_pagination_links
-
-# Package imports
-from stac_fastapi.elasticsearch.session import Session
 
 logger = logging.getLogger(__name__)
 

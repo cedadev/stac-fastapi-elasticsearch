@@ -13,7 +13,6 @@ from string import Template
 from typing import Optional
 from urllib.parse import urljoin
 
-from elasticsearch import NotFoundError
 from elasticsearch_dsl import Document, Search
 from elasticsearch_dsl.query import QueryString
 from elasticsearch_dsl.search import Q, Search
@@ -26,11 +25,10 @@ from pygeofilter.parsers.cql2_text import parse as parse_text
 # CQL Filters imports
 from pygeofilter.parsers.cql_json import parse as parse_json
 from pygeofilter_elasticsearch import to_filter
+from stac_fastapi.elasticsearch.config import settings
 from stac_fastapi.types.links import CollectionLinks, ItemLinks
 from stac_fastapi_asset_search.types import AssetLinks
 from stac_pydantic.shared import MimeTypes
-
-from stac_fastapi.elasticsearch.config import settings
 
 from .utils import Coordinates, rgetattr
 

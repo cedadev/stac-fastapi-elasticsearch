@@ -17,12 +17,10 @@ from elasticsearch import NotFoundError
 from elasticsearch_dsl import A, Search
 from elasticsearch_dsl.query import QueryString
 from elasticsearch_dsl.search import Q, Search
-
 # Third-party imports
 from fastapi import HTTPException
 from pygeofilter.parsers.cql2_json import parse as parse_json2
 from pygeofilter.parsers.cql2_text import parse as parse_text
-
 # CQL Filters imports
 from pygeofilter.parsers.cql_json import parse as parse_json
 from pygeofilter_elasticsearch import to_filter
@@ -53,8 +51,8 @@ class ElasticsearchEOItem(database.STACDocument):
 
     def get(self, **kwargs):
         try:
-            item, _ = self.search(**kwargs)
-            return item[0]
+            items = self.search(**kwargs)
+            return items[0]
 
         except IndexError as exc:
             raise NotFoundError from exc
@@ -456,9 +454,10 @@ class ElasticsearchEOCollection(database.STACDocument):
 
     def get(self, id, **kwargs):
         try:
-            search = self.search(id=id)
-            return next(search)
-        except StopIteration:
+            result = self.search(id=id)
+            return next(result)
+
+        except (IndexError, StopIteration):
             raise NotFoundError
 
     @classmethod
@@ -630,6 +629,9 @@ class ElasticsearchEOCollection(database.STACDocument):
         search.aggs.bucket("satallites", agg)
 
         response = search.execute()
+
+        if not response.aggregations.satallites.buckets:
+            raise IndexError
 
         for aggregation in response.aggregations.satallites.buckets:
             # try:

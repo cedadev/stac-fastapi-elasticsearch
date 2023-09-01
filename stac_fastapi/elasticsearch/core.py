@@ -226,7 +226,7 @@ class CoreCrudClient(BaseCoreClient):
         try:
             search = {
                 "collection_ids": [collection_id],
-                "catalog": [request.get("root_path").strip("/")],
+                "catalog": request.get("root_path").strip("/"),
                 "item_ids": [item_id],
             }
 

@@ -8,6 +8,8 @@ __copyright__ = "Copyright 2018 United Kingdom Research and Innovation"
 __license__ = "BSD - see LICENSE file in top-level package directory"
 __contact__ = "richard.d.smith@stfc.ac.uk"
 
+from elasticsearch import NotFoundError
+
 # Third-party imports
 from importlib_metadata import entry_points
 
@@ -100,8 +102,12 @@ class SearchMiddleware:
         # call search for each
 
         if "catalog" in kwargs and kwargs["catalog"] in self.catalogs_map:
-            database = self.database_models[self.catalogs_map[kwargs["catalog"]]]
-            return database.get(**kwargs)
+            try:
+                database = self.database_models[self.catalogs_map[kwargs["catalog"]]]
+                return database.get(**kwargs)
+
+            except NotFoundError as exc:
+                raise NotFoundError from exc
 
         else:
             for database in self.database_models.values():
@@ -112,7 +118,7 @@ class SearchMiddleware:
                 except:
                     pass
 
-            return None
+            raise NotFoundError
 
 
 class CollectionSearchMiddleware(SearchMiddleware):

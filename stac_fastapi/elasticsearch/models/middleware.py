@@ -8,6 +8,8 @@ __copyright__ = "Copyright 2018 United Kingdom Research and Innovation"
 __license__ = "BSD - see LICENSE file in top-level package directory"
 __contact__ = "richard.d.smith@stfc.ac.uk"
 
+from itertools import chain
+
 from elasticsearch import NotFoundError
 
 # Third-party imports
@@ -69,17 +71,26 @@ class SearchMiddleware:
             return database.search(**kwargs)
 
         else:
-            page = int(kwargs["page"]) if "page" in kwargs and kwargs["page"] else 1
             limit = (
                 int(kwargs["limit"]) if "limit" in kwargs and kwargs["limit"] else 10
             )
-            count = 0
+            total_count = 0
+            total_items = iter(())
             for database in self.database_models.values():
                 count_kwargs = kwargs
                 count_kwargs.update({"database": database})
-                count += self.count(**count_kwargs)
-                if page * limit < count:
-                    return database.search(**kwargs)
+                count = self.count(**count_kwargs)
+
+                if count > 0:
+                    kwargs["limit"] = limit
+                    total_items = chain(total_items, database.search(**kwargs))
+                    limit -= count
+                    total_count += count
+
+                if total_count >= limit:
+                    break
+
+            return total_items
 
     def count(self, **kwargs):
         if "database" in kwargs:

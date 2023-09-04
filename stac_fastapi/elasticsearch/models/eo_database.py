@@ -17,10 +17,12 @@ from elasticsearch import NotFoundError
 from elasticsearch_dsl import A, Search
 from elasticsearch_dsl.query import QueryString
 from elasticsearch_dsl.search import Q, Search
+
 # Third-party imports
 from fastapi import HTTPException
 from pygeofilter.parsers.cql2_json import parse as parse_json2
 from pygeofilter.parsers.cql2_text import parse as parse_text
+
 # CQL Filters imports
 from pygeofilter.parsers.cql_json import parse as parse_json
 from pygeofilter_elasticsearch import to_filter
@@ -75,7 +77,7 @@ class ElasticsearchEOItem(database.STACDocument):
         if item_ids := kwargs.get("item_ids"):
             filter_queries.append(Q("terms", _id=item_ids))
 
-        if collection_ids := kwargs.get("collection"):
+        if collection_ids := kwargs.get("collection_ids"):
             filter_queries.append(
                 Q("terms", misc__platform__Satellite__raw=collection_ids)
             )

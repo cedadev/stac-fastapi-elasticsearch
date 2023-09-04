@@ -92,15 +92,17 @@ class STACDocument(Document):
         """
         return getattr(self, "stac_version", STAC_VERSION_DEFAULT)
 
-    @classmethod
-    def _search(cls, catalog: str = None, **kwargs) -> Search:
+    def _search(self, catalog: str = None, **kwargs) -> Search:
         """
         Return Elasticsearch DSL Search
         """
-        if catalog and catalog in cls.catalogs:
-            return super().search(index=cls.catalogs[catalog])
+        if catalog and catalog in self.catalogs:
+            search = super().search(index=self.catalogs[catalog])
 
-        return super().search(index=",".join(cls.catalogs.values()))
+        else:
+            search = super().search(index=",".join(self.catalogs.values()))
+
+        return self.get_queryset(search, **kwargs)
 
     def get_queryset(self, qs: Search, **kwargs) -> Search:
         """
@@ -487,11 +489,6 @@ class ElasticsearchItem(STACDocument):
     ) -> None:
         super().__init__(catalog, index, extensions, **kwargs)
 
-    def search(self, **kwargs):
-        search = super()._search(catalog=kwargs.get("catalog", None))
-
-        return self.get_queryset(search, **kwargs)
-
     @classmethod
     def _matches(cls, hit):
         # override _matches to match indices in a pattern instead of just ALIAS
@@ -591,11 +588,6 @@ class ElasticsearchCollection(STACDocument):
     """
 
     type = "FeatureCollection"
-
-    def search(self, **kwargs):
-        search = super()._search(catalog=kwargs.get("catalog", None))
-
-        return self.get_queryset(search, **kwargs)
 
     @classmethod
     def _matches(cls, hit):

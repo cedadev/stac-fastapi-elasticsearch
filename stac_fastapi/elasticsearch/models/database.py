@@ -13,6 +13,7 @@ from string import Template
 from typing import Optional
 from urllib.parse import urljoin
 
+from elasticsearch import NotFoundError
 from elasticsearch_dsl import Document, Search
 from elasticsearch_dsl.query import QueryString
 from elasticsearch_dsl.search import Q, Search
@@ -44,9 +45,6 @@ DEFAULT_MODELS = {
 
 
 class STACDocument(Document):
-    extensions: list
-    catalogs: dict = {}
-
     def __init__(
         self, catalog: str = None, index: str = None, extensions: list = [], **kwargs
     ) -> None:
@@ -61,6 +59,9 @@ class STACDocument(Document):
 
         def __init__(self, name: str):
             self.name = name
+
+    def get(self, **kwargs):
+        return super().get(id=kwargs["id"], index=self.catalogs[kwargs["catalog"]])
 
     def add(self, catalog, index) -> None:
         self.catalogs[catalog] = index
@@ -390,6 +391,8 @@ class STACDocument(Document):
 
 class ElasticsearchAsset(STACDocument):
     type = "Feature"
+    extensions: list
+    catalogs: dict = {}
 
     def search(self, **kwargs):
         search = super()._search(catalog=kwargs.get("catalog", None))
@@ -483,11 +486,21 @@ class ElasticsearchAsset(STACDocument):
 
 class ElasticsearchItem(STACDocument):
     type = "Feature"
+    extensions: list
+    catalogs: dict = {}
 
     def __init__(
         self, catalog: str = None, index: str = None, extensions: list = [], **kwargs
     ) -> None:
         super().__init__(catalog, index, extensions, **kwargs)
+
+    def get(self, **kwargs):
+        item = super().get(**kwargs)
+
+        if item.get_collection_id() != kwargs["collection_id"]:
+            raise NotFoundError
+
+        return item
 
     @classmethod
     def _matches(cls, hit):
@@ -588,6 +601,8 @@ class ElasticsearchCollection(STACDocument):
     """
 
     type = "FeatureCollection"
+    extensions: list
+    catalogs: dict = {}
 
     @classmethod
     def _matches(cls, hit):

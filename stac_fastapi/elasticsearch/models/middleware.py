@@ -38,7 +38,7 @@ class SearchMiddleware:
         self.load_catalogs(catalogs, extensions, **kwargs)
 
     def load_catalogs(self, conf: dict, extensions: list, **kwargs):
-        for key, conf in conf.items():
+        for key, conf in reversed(list(conf.items())):
             if key in DEFAULT_MODELS and key == self.MODEL_KEY:
                 self.load_catalog("default", conf, extensions, **kwargs)
             elif isinstance(conf, dict):
@@ -68,6 +68,7 @@ class SearchMiddleware:
         # check CATALOGS mapping
         if "catalog" in kwargs and kwargs["catalog"] in self.catalogs_map:
             database = self.database_models[self.catalogs_map[kwargs["catalog"]]]
+
             return database.search(**kwargs)
 
         else:
@@ -114,16 +115,21 @@ class SearchMiddleware:
 
         if "catalog" in kwargs and kwargs["catalog"] in self.catalogs_map:
             try:
-                database = self.database_models[self.catalogs_map[kwargs["catalog"]]]
+                database_key = self.catalogs_map[kwargs["catalog"]]
+                database = self.database_models[database_key]
+
                 return database.get(**kwargs)
 
             except NotFoundError as exc:
                 raise NotFoundError from exc
 
         else:
-            for database in self.database_models.values():
+            for catalog, database_key in self.catalogs_map.items():
                 try:
+                    kwargs["catalog"] = catalog
+                    database = self.database_models[database_key]
                     result = database.get(**kwargs)
+
                     if result:
                         return result
                 except:

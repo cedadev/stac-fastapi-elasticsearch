@@ -224,13 +224,11 @@ class CoreCrudClient(BaseCoreClient):
             Item.
         """
         try:
-            search = {
-                "collection_ids": [collection_id],
-                "catalog": request.get("root_path").strip("/"),
-                "item_ids": [item_id],
-            }
-
-            item = self.item_table.get(**search)
+            item = self.item_table.get(
+                catalog=request.get("root_path").strip("/"),
+                collection_id=collection_id,
+                id=item_id,
+            )
         except NotFoundError as exc:
             raise (
                 HTTPException(
@@ -301,7 +299,9 @@ class CoreCrudClient(BaseCoreClient):
             Collection.
         """
         try:
-            collection = self.collection_table.get(id=collection_id)
+            collection = self.collection_table.get(
+                id=collection_id, catalog=request.get("root_path").strip("/")
+            )
         except NotFoundError:
             raise (NotFoundError(404, f"Collection: {collection_id} not found"))
 

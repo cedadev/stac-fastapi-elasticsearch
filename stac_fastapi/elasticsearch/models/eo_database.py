@@ -39,6 +39,8 @@ STAC_VERSION_DEFAULT = "1.0.0"
 
 class ElasticsearchEOItem(database.STACDocument):
     type = "Feature"
+    extensions: list
+    catalogs: dict = {}
 
     def _search(self, **kwargs):
         search = super()._search(catalog=kwargs.get("catalog", None))
@@ -53,7 +55,11 @@ class ElasticsearchEOItem(database.STACDocument):
 
     def get(self, **kwargs):
         try:
+            kwargs["item_ids"] = [kwargs.pop("id")]
+            kwargs["collection_ids"] = [kwargs.pop("collection_id")]
+
             items = self.search(**kwargs)
+
             return items[0]
 
         except IndexError as exc:
@@ -453,6 +459,8 @@ class ElasticsearchEOCollection(database.STACDocument):
     """
 
     type = "FeatureCollection"
+    extensions: list
+    catalogs: dict = {}
 
     def get(self, id, **kwargs):
         try:
@@ -462,8 +470,7 @@ class ElasticsearchEOCollection(database.STACDocument):
         except (IndexError, StopIteration):
             raise NotFoundError
 
-    @classmethod
-    def _search(cls, id: str = None, **kwargs):
+    def _search(self, id: str = None, **kwargs):
         agg = A("terms", field="misc.platform.Satellite.raw", size=15)
 
         # orbit_info

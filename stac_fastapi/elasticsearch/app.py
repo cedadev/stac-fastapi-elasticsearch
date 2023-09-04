@@ -10,6 +10,12 @@ __contact__ = "richard.d.smith@stfc.ac.uk"
 
 from stac_fastapi.api.app import StacApi
 from stac_fastapi.api.models import create_get_request_model, create_post_request_model
+from stac_fastapi.elasticsearch.asset_search import AssetSearchClient
+from stac_fastapi.elasticsearch.config import settings
+from stac_fastapi.elasticsearch.core import CoreCrudClient
+from stac_fastapi.elasticsearch.filters import FiltersClient
+from stac_fastapi.elasticsearch.models import middleware
+from stac_fastapi.elasticsearch.session import Session
 from stac_fastapi.extensions.core import (  # SortExtension,; TransactionExtension,
     ContextExtension,
     FieldsExtension,
@@ -25,13 +31,6 @@ from stac_fastapi_context_collections.context_collections import (
     ContextCollectionExtension,
 )
 from stac_fastapi_freetext.free_text import FreeTextExtension
-
-from stac_fastapi.elasticsearch.asset_search import AssetSearchClient
-from stac_fastapi.elasticsearch.config import settings
-from stac_fastapi.elasticsearch.core import CoreCrudClient
-from stac_fastapi.elasticsearch.filters import FiltersClient
-from stac_fastapi.elasticsearch.models import middleware
-from stac_fastapi.elasticsearch.session import Session
 
 extensions = [
     ContextExtension(),

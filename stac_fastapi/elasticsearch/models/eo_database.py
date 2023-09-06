@@ -702,7 +702,7 @@ class ElasticsearchEOCollection(database.STACDocument):
         return self._search(**kwargs)
 
     def count(self, **kwargs):
-        agg = A("value_count", field="misc.platform.Satellite.raw")
+        agg = A("cardinality", field="misc.platform.Satellite.raw")
 
         search = super()._search(**kwargs)
 

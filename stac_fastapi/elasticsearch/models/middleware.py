@@ -73,7 +73,7 @@ class SearchMiddleware:
 
         else:
             limit = (
-                int(kwargs["limit"]) if "limit" in kwargs and kwargs["limit"] else 10
+                int(kwargs["limit"]) if "limit" in kwargs and kwargs["limit"] else 10000
             )
             total_count = 0
             total_items = iter(())

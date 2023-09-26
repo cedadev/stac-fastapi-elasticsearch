@@ -34,13 +34,11 @@ from stac_pydantic.shared import MimeTypes
 from starlette.requests import Request as StarletteRequest
 
 from stac_fastapi.elasticsearch.context import generate_context
-from stac_fastapi.elasticsearch.models import database, serializers
+from stac_fastapi.elasticsearch.models import database, middleware, serializers
 from stac_fastapi.elasticsearch.pagination import generate_pagination_links
 
 # Package imports
 from stac_fastapi.elasticsearch.session import Session
-
-from .utils import get_queryset
 
 logger = logging.getLogger(__name__)
 
@@ -54,11 +52,11 @@ class CoreCrudClient(BaseCoreClient):
     """
 
     session: Session = attr.ib(default=None)
-    item_table: Type[database.ElasticsearchItem] = attr.ib(
-        default=database.ElasticsearchItem
+    item_table: Type[middleware.SearchMiddleware] = attr.ib(
+        default=middleware.ItemSearchMiddleware
     )
-    collection_table: Type[database.ElasticsearchCollection] = attr.ib(
-        default=database.ElasticsearchCollection
+    collection_table: Type[middleware.SearchMiddleware] = attr.ib(
+        default=middleware.CollectionSearchMiddleware
     )
     item_serializer: Type[serializers.ItemSerializer] = attr.ib(
         default=serializers.ItemSerializer
@@ -97,28 +95,25 @@ class CoreCrudClient(BaseCoreClient):
         request_dict["item_ids"] = request_dict.pop("ids")
         request_dict["collection_ids"] = request_dict.pop("collections")
 
-        items = get_queryset(
-            self, self.item_table, catalog=request.get("root_path"), **request_dict
-        )
-        result_count = items.count()
+        items = self.item_table.search(catalog=request.get("root_path"), **request_dict)
+
+        count = self.item_table.count(catalog=request.get("root_path"), **request_dict)
 
         response = []
 
-        for item in items.execute():
+        for item in items:
             response.append(self.item_serializer.db_to_stac(item, request))
 
         item_collection = stac_types.ItemCollection(
             type="FeatureCollection",
             features=response,
-            links=generate_pagination_links(
-                request, result_count, search_request.limit
-            ),
+            links=generate_pagination_links(request, count, search_request.limit),
         )
 
         # Modify response with extensions
         if self.extension_is_enabled("ContextExtension"):
             context = generate_context(
-                search_request.limit, result_count, getattr(search_request, "page", 1)
+                search_request.limit, count, getattr(search_request, "page", 1)
             )
             item_collection["context"] = context
 
@@ -171,17 +166,20 @@ class CoreCrudClient(BaseCoreClient):
         if "filter-lang" not in search.keys():
             search["filter-lang"] = "cql-text"
 
-        items = get_queryset(
-            self, self.item_table, catalog=request.get("root_path").strip("/"), **search
+        items = self.item_table.search(
+            catalog=request.get("root_path").strip("/"), **search
         )
-        result_count = items.count()
+
+        count = self.item_table.count(
+            catalog=request.get("root_path").strip("/"), **search
+        )
 
         response = []
 
-        for item in items.execute():
+        for item in items:
             response.append(self.item_serializer.db_to_stac(item, request))
 
-        links = generate_pagination_links(request, result_count, limit)
+        links = generate_pagination_links(request, count, limit)
 
         # Create base response
         item_collection = stac_types.ItemCollection(
@@ -193,7 +191,7 @@ class CoreCrudClient(BaseCoreClient):
         # Modify response with extensions
         if self.extension_is_enabled("ContextExtension"):
             item_collection["context"] = generate_context(
-                limit, result_count, kwargs.get("page", 1)
+                limit, count, kwargs.get("page", 1)
             )
 
         if self.extension_is_enabled("ContextCollectionExtension"):
@@ -227,7 +225,11 @@ class CoreCrudClient(BaseCoreClient):
             Item.
         """
         try:
-            item = self.item_table.get(id=item_id)
+            item = self.item_table.get(
+                catalog=request.get("root_path").strip("/"),
+                collection_id=collection_id,
+                id=item_id,
+            )
         except NotFoundError as exc:
             raise (
                 HTTPException(
@@ -236,7 +238,7 @@ class CoreCrudClient(BaseCoreClient):
                 )
             ) from exc
 
-        if not getattr(item, "collection_id", None) == collection_id:
+        if item.get_collection_id() != collection_id:
             raise (
                 HTTPException(
                     status_code=404,
@@ -257,23 +259,27 @@ class CoreCrudClient(BaseCoreClient):
 
         response = []
 
-        for collection in self.collection_table.search(
+        collections = self.collection_table.search(
             catalog=request.get("root_path").strip("/")
-        ):
+        )
+
+        for collection in collections:
             response.append(
                 serializers.CollectionSerializer.db_to_stac(collection, request)
             )
+
+        base_url = urljoin(str(request.base_url), request.get("root_path", "") + "/")
 
         links = [
             {
                 "rel": Relations.root,
                 "type": MimeTypes.json,
-                "href": str(request.base_url),
+                "href": base_url,
             },
             {
                 "rel": Relations.self,
                 "type": MimeTypes.json,
-                "href": urljoin(str(request.base_url), "collections"),
+                "href": urljoin(base_url, "collections"),
             },
         ]
 
@@ -296,19 +302,25 @@ class CoreCrudClient(BaseCoreClient):
             Collection.
         """
         try:
-            collection = self.collection_table.get(id=collection_id)
+            collection = self.collection_table.get(
+                id=collection_id, catalog=request.get("root_path").strip("/")
+            )
         except NotFoundError:
             raise (NotFoundError(404, f"Collection: {collection_id} not found"))
 
         collection = serializers.CollectionSerializer.db_to_stac(collection, request)
 
         if self.extension_is_enabled("FilterExtension"):
+            base_url = urljoin(
+                str(request.base_url), request.get("root_path", "") + "/"
+            )
+
             collection["links"].append(
                 {
                     "rel": "https://www.opengis.net/def/rel/ogc/1.0/queryables",
                     "type": MimeTypes.json,
                     "href": urljoin(
-                        str(request.base_url),
+                        base_url,
                         f"collections/{collection.get('id')}/queryables",
                     ),
                 }
@@ -336,11 +348,18 @@ class CoreCrudClient(BaseCoreClient):
         limit = int(query_params.get("limit", "10"))
 
         items = self.item_table.search(
-            catalog=request.get("root_path").strip("/")
-        ).filter("term", collection_id=collection_id)
-        result_count = items.count()
+            catalog=request.get("root_path").strip("/"),
+            collection_ids=[collection_id],
+            page=page,
+            limit=limit,
+        )
 
-        items = items[(page - 1) * limit : page * limit]
+        count = self.item_table.count(
+            catalog=request.get("root_path").strip("/"),
+            collection_ids=[collection_id],
+            page=page,
+            limit=limit,
+        )
 
         # TODO: support filter parameter https://portal.ogc.org/files/96288#filter-param
 
@@ -353,12 +372,12 @@ class CoreCrudClient(BaseCoreClient):
         item_collection = stac_types.ItemCollection(
             type="FeatureCollection",
             features=response,
-            links=generate_pagination_links(request, result_count, limit),
+            links=generate_pagination_links(request, count, limit),
         )
 
         # Modify response with extensions
         if self.extension_is_enabled("ContextExtension"):
-            context = generate_context(limit, result_count, page)
+            context = generate_context(limit, count, page)
             item_collection["context"] = context
 
         return item_collection

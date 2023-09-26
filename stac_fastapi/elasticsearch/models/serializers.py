@@ -15,7 +15,6 @@ import elasticsearch_dsl
 from dateutil import parser
 from requests.models import Response
 from stac_fastapi.types import stac as stac_types
-from stac_fastapi.types.links import ItemLinks
 from stac_fastapi_asset_search.types import Asset
 
 from stac_fastapi.elasticsearch.models import database
@@ -50,29 +49,24 @@ class AssetSerializer(Serializer):
         db_model: database.ElasticsearchAsset,
         request: Response,
     ) -> Asset:
-
         return Asset(
             type="Feature",
             stac_version=db_model.get_stac_version(),
             stac_extensions=db_model.get_stac_extensions(),
-            asset_id=db_model.meta.id,
+            asset_id=db_model.get_id(),
             roles=db_model.get_roles(),
             item=db_model.get_item_id(),
             bbox=db_model.get_bbox(),
             href=db_model.get_url(),
             media_type=db_model.get_media_type(),
             properties=db_model.get_properties(),
-            links=db_model.get_links(
-                base_url=str(request.base_url),
-                collection_id=getattr(request, "collection_id", None),
-            ),
+            links=db_model.get_links(request, getattr(request, "collection_id", None)),
         )
 
     @classmethod
     def stac_to_db(
         cls, stac_data: Asset, exclude_geometry=False
     ) -> database.ElasticsearchAsset:
-
         db_item = database.ElasticsearchAsset(
             meta={"id": stac_data.get("id")},
             id=stac_data.get("id"),
@@ -99,39 +93,16 @@ class ItemSerializer(Serializer):
     def db_to_stac(
         cls, db_model: database.ElasticsearchItem, request: Response
     ) -> stac_types.Item:
-        # Added for different mappings
-        if not isinstance(db_model, database.ElasticsearchItem):
-            item = database.ElasticsearchItem()
-            db_model = db_model.to_dict()
-            print(db_model)
-            print(db_model)
-            return stac_types.Item(
-                type="Feature",
-                stac_version=item.get_stac_version(),
-                stac_extensions=item.get_stac_extensions(),
-                id=db_model.get("item_id", ""),
-                collection=db_model.get("collection_id", ""),
-                bbox=None,
-                geometry=None,
-                properties=db_model.get("properties", {}),
-                links=ItemLinks(
-                    base_url=str(request.base_url),
-                    collection_id=db_model.get("collection_id", ""),
-                    item_id=db_model.get("item_id", ""),
-                ).create_links(),
-                assets={},
-            )
-
         return stac_types.Item(
             type="Feature",
             stac_version=db_model.get_stac_version(),
             stac_extensions=db_model.get_stac_extensions(),
-            id=db_model.meta.id,
+            id=db_model.get_id(),
             collection=db_model.get_collection_id(),
             bbox=db_model.get_bbox(),
-            geometry=None,
+            geometry=db_model.get_geometry(),
             properties=db_model.get_properties(),
-            links=db_model.get_links(base_url=str(request.base_url)),
+            links=db_model.get_links(request),
             assets=db_model.get_stac_assets(),
         )
 
@@ -139,10 +110,8 @@ class ItemSerializer(Serializer):
     def stac_to_db(
         cls, stac_data: stac_types.Item, exclude_geometry=False
     ) -> database.ElasticsearchItem:
-
         db_item = database.ElasticsearchItem(
             meta={"id": stac_data.get("id")},
-            type="item",
             id=stac_data.get("id"),
             bbox=stac_data.get("bbox"),
             collection_id=stac_data.get("collection"),
@@ -159,10 +128,9 @@ class CollectionSerializer(Serializer):
     def db_to_stac(
         cls, db_model: database.ElasticsearchCollection, request: Response
     ) -> stac_types.Collection:
-
         return stac_types.Collection(
             type="Collection",
-            id=db_model.meta.id,
+            id=db_model.get_id(),
             stac_extensions=db_model.get_stac_extensions(),
             stac_version=db_model.get_stac_version(),
             title=db_model.get_title(),
@@ -172,14 +140,13 @@ class CollectionSerializer(Serializer):
             providers=db_model.get_providers(),
             summaries=db_model.get_summaries(),
             extent=db_model.get_extent(),
-            links=db_model.get_links(base_url=str(request.base_url)),
+            links=db_model.get_links(request),
         )
 
     @classmethod
     def stac_to_db(
         cls, stac_data: stac_types.Collection, exclude_geometry=False
     ) -> database.ElasticsearchCollection:
-
         db_collection = database.ElasticsearchCollection(
             meta={"id": stac_data.get("id")},
             id=stac_data.get("id"),
@@ -190,20 +157,16 @@ class CollectionSerializer(Serializer):
             license=stac_data.get("license"),
             properties=stac_data.get("summaries"),
             providers=stac_data.get("providers"),
-            type="collection",
             extent=cls.stac_to_db_extent(stac_data.get("extent")),
             keywords=stac_data.get("keywords"),
         )
-
+        db_collection.meta.id = stac_data.get("id")
         return db_collection
 
     @staticmethod
     def stac_to_db_extent(extent: Dict[str, Any]) -> Dict[str, Any]:
-
         temporal = extent.get("temporal")
-
         if temporal:
             for k, d in temporal.items():
                 extent["temporal"][k] = parser.parse(d).isoformat()
-
         return extent

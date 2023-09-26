@@ -17,12 +17,10 @@ from elasticsearch import NotFoundError
 from elasticsearch_dsl import A, Search
 from elasticsearch_dsl.query import QueryString
 from elasticsearch_dsl.search import Q, Search
-
 # Third-party imports
 from fastapi import HTTPException
 from pygeofilter.parsers.cql2_json import parse as parse_json2
 from pygeofilter.parsers.cql2_text import parse as parse_text
-
 # CQL Filters imports
 from pygeofilter.parsers.cql_json import parse as parse_json
 from pygeofilter_elasticsearch import to_filter
@@ -764,29 +762,12 @@ class ElasticsearchEOCollection(database.STACDocument):
         """
         base_url = urljoin(str(request.base_url), request.get("root_path", "") + "/")
 
-        print(base_url)
-
-        print(
-            urljoin(
-                base_url + "/",
-                f"collections/{self.get_id()}/queryables",
-            )
-        )
-
         collection_links = CollectionLinks(
             base_url=base_url,
             collection_id=self.get_id(),
         ).create_links()
 
-        print(collection_links)
-
         if self.extension_is_enabled("FilterExtension"):
-            print(
-                urljoin(
-                    base_url,
-                    f"collections/{self.get_id()}/queryables",
-                )
-            )
             collection_links.append(
                 {
                     "rel": "https://www.opengis.net/def/rel/ogc/1.0/queryables",

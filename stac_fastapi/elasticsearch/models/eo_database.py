@@ -26,10 +26,12 @@ from pygeofilter.parsers.cql2_text import parse as parse_text
 # CQL Filters imports
 from pygeofilter.parsers.cql_json import parse as parse_json
 from pygeofilter_elasticsearch import to_filter
-from stac_fastapi.elasticsearch.config import settings
-from stac_fastapi.elasticsearch.models import database
+from requests.models import Response
 from stac_fastapi.types.links import CollectionLinks, ItemLinks
 from stac_pydantic.shared import MimeTypes
+
+from stac_fastapi.elasticsearch.config import settings
+from stac_fastapi.elasticsearch.models import database
 
 from .utils import Coordinates, rgetattr
 
@@ -428,12 +430,14 @@ class ElasticsearchEOItem(database.STACDocument):
 
         return rgetattr(self, "misc.platform.Satellite")
 
-    def get_links(self, base_url: str) -> list:
+    def get_links(self, request: Response) -> list:
         """
         Returns list of links
         """
+        base_url = urljoin(str(request.base_url), request.get("root_path", "") + "/")
+
         links = ItemLinks(
-            base_url=str(base_url),
+            base_url=base_url,
             collection_id=self.get_collection_id(),
             item_id=self.get_id(),
         ).create_links()
@@ -754,16 +758,35 @@ class ElasticsearchEOCollection(database.STACDocument):
     def get_providers(self) -> list:
         return getattr(self, "providers", [])
 
-    def get_links(self, base_url: str) -> list:
+    def get_links(self, request: Response) -> list:
         """
         Returns list of links
         """
+        base_url = urljoin(str(request.base_url), request.get("root_path", "") + "/")
+
+        print(base_url)
+
+        print(
+            urljoin(
+                base_url + "/",
+                f"collections/{self.get_id()}/queryables",
+            )
+        )
+
         collection_links = CollectionLinks(
             base_url=base_url,
             collection_id=self.get_id(),
         ).create_links()
 
+        print(collection_links)
+
         if self.extension_is_enabled("FilterExtension"):
+            print(
+                urljoin(
+                    base_url,
+                    f"collections/{self.get_id()}/queryables",
+                )
+            )
             collection_links.append(
                 {
                     "rel": "https://www.opengis.net/def/rel/ogc/1.0/queryables",

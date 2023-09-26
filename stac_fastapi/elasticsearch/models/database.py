@@ -26,10 +26,12 @@ from pygeofilter.parsers.cql2_text import parse as parse_text
 # CQL Filters imports
 from pygeofilter.parsers.cql_json import parse as parse_json
 from pygeofilter_elasticsearch import to_filter
-from stac_fastapi.elasticsearch.config import settings
+from requests.models import Response
 from stac_fastapi.types.links import CollectionLinks, ItemLinks
 from stac_fastapi_asset_search.types import AssetLinks
 from stac_pydantic.shared import MimeTypes
+
+from stac_fastapi.elasticsearch.config import settings
 
 from .utils import Coordinates, rgetattr
 
@@ -472,12 +474,14 @@ class ElasticsearchAsset(STACDocument):
 
         return asset
 
-    def get_links(self, base_url: str, collection_id: str) -> list:
+    def get_links(self, request: Response, collection_id: str) -> list:
         """
         Returns list of links
         """
+        base_url = urljoin(str(request.base_url), request.get("root_path", "") + "/")
+
         return AssetLinks(
-            base_url=str(base_url),
+            base_url=base_url,
             collection_id=collection_id,
             item_id=self.get_item_id(),
             asset_id=self.get_id(),
@@ -570,12 +574,14 @@ class ElasticsearchItem(STACDocument):
         """
         return getattr(self, "collection_id", None)
 
-    def get_links(self, base_url: str) -> list:
+    def get_links(self, request: Response) -> list:
         """
         Returns list of links
         """
+        base_url = urljoin(str(request.base_url), request.get("root_path", "") + "/")
+
         links = ItemLinks(
-            base_url=str(base_url),
+            base_url=base_url,
             collection_id=self.get_collection_id(),
             item_id=self.get_id(),
         ).create_links()
@@ -662,12 +668,14 @@ class ElasticsearchCollection(STACDocument):
     def get_providers(self) -> list:
         return getattr(self, "providers", [])
 
-    def get_links(self, base_url: str) -> list:
+    def get_links(self, request: Response) -> list:
         """
         Returns list of links
         """
+        base_url = urljoin(str(request.base_url), request.get("root_path", "") + "/")
+
         collection_links = CollectionLinks(
-            base_url=str(base_url),
+            base_url=base_url,
             collection_id=self.get_id(),
         ).create_links()
 

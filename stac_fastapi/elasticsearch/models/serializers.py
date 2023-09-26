@@ -60,9 +60,7 @@ class AssetSerializer(Serializer):
             href=db_model.get_url(),
             media_type=db_model.get_media_type(),
             properties=db_model.get_properties(),
-            links=db_model.get_links(
-                request.base_url, getattr(request, "collection_id", None)
-            ),
+            links=db_model.get_links(request, getattr(request, "collection_id", None)),
         )
 
     @classmethod
@@ -104,7 +102,7 @@ class ItemSerializer(Serializer):
             bbox=db_model.get_bbox(),
             geometry=db_model.get_geometry(),
             properties=db_model.get_properties(),
-            links=db_model.get_links(request.base_url),
+            links=db_model.get_links(request),
             assets=db_model.get_stac_assets(),
         )
 
@@ -142,7 +140,7 @@ class CollectionSerializer(Serializer):
             providers=db_model.get_providers(),
             summaries=db_model.get_summaries(),
             extent=db_model.get_extent(),
-            links=db_model.get_links(str(request.base_url)),
+            links=db_model.get_links(request),
         )
 
     @classmethod
